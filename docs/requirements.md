@@ -144,3 +144,11 @@ en una versión posterior.
 - Cantidades en otras unidades: litros, gramos, etc.
 - Notificaciones de reposición.
 - Atributos específicos: talla de ropa, marca, color, etc.
+- Recomendaciones de recetas según los alimentos disponibles,
+  priorizando los lotes próximos a caducar e indicando
+  los ingredientes que faltan.
+- Registro del uso de prendas y detección de ropa que lleva
+  un tiempo configurable sin utilizarse.
+- Sugerencias para conservar, donar o vender prendas poco utilizadas.
+- Preparación de borradores de anuncios de venta con fotografías
+  y datos de la prenda, para su revisión y publicación por el usuario.
