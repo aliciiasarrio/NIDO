@@ -38,8 +38,11 @@ public class AuthService {
         try {
             user = userRepository.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
-            if (e.getMessage() != null && e.getMessage().contains("users_email_key")) {
-                throw new EmailAlreadyExistsException("El correo ya está registrado");
+            Throwable cause = e.getCause();
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException cve) {
+                if ("23505".equals(cve.getSQLState()) && "users_email_key".equals(cve.getConstraintName())) {
+                    throw new EmailAlreadyExistsException("El correo ya está registrado");
+                }
             }
             throw e;
         }
