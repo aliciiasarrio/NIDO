@@ -36,8 +36,9 @@ en una versión posterior.
 - Organizar ubicaciones dentro de otras ubicaciones.
 - Ejemplo: dormitorio → armario → cajón superior.
 - Mostrar la ruta completa de una ubicación.
-- Impedir eliminar una ubicación que contiene objetos
-  o ubicaciones internas.
+- Eliminar una ubicación significa archivarla.
+- Una ubicación con existencias a cero puede archivarse
+  si no contiene ubicaciones internas activas.
 
 ### RF-04. Categorías
 
@@ -116,8 +117,11 @@ en una versión posterior.
   pero no necesitan un mínimo de reposición.
 - Los nombres de productos no son únicos: pueden existir
   objetos distintos con el mismo nombre.
+- Eliminar objetos significa archivarlos.
 - Eliminar un registro con existencias requiere confirmación
   explícita del usuario.
+- Un objeto con entradas de compra pendientes no puede archivarse
+  hasta resolverlas.
 
 ## 4. Requisitos de calidad
 
