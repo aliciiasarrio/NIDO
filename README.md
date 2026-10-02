@@ -25,6 +25,10 @@ frontend, API, base de datos, persistencia, autenticación y pruebas.
 - Base de datos: PostgreSQL.
 - Persistencia: Spring Data JPA / Hibernate.
 
+## Documentación
+
+- [Guía de ejecución local (Windows/PowerShell)](docs/local-setup.md)
+
 ## Estado
 
 Proyecto en fase inicial.
