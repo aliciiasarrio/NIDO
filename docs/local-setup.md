@@ -64,11 +64,26 @@ Inicia la aplicación Spring Boot:
 .\mvnw.cmd spring-boot:run
 ```
 
-## 4. Probar los endpoints
+## 4. Arrancar el frontend
 
-Con el backend funcionando de fondo, puedes acceder a las siguientes URLs desde tu navegador o usando herramientas como `curl` o Postman:
-- Estado de la aplicación: [http://localhost:8080/api/status](http://localhost:8080/api/status)
-- Listado de categorías: [http://localhost:8080/api/categories](http://localhost:8080/api/categories)
+Abre una nueva consola (manteniendo el backend y la base de datos funcionando) y entra en la carpeta del frontend:
+```powershell
+cd frontend
+```
+
+Inicia el servidor de desarrollo de Angular:
+```powershell
+npm start
+```
+*Nota: Este comando utiliza un proxy local configurado en `proxy.conf.json` para redirigir las peticiones de `/api/**` hacia `http://localhost:8080`. El proxy asegura que no haya problemas de CORS y solo se utiliza durante el desarrollo.*
+
+## 5. Probar la aplicación
+
+Con el backend y el frontend funcionando, puedes acceder desde tu navegador a:
+- Interfaz gráfica: [http://localhost:4200](http://localhost:4200)
+
+Deberías ver la pantalla inicial de NIDO y la lista de categorías cargando desde la base de datos.
+(También puedes verificar los endpoints directamente en [http://localhost:8080/api/status](http://localhost:8080/api/status) y `/api/categories`).
 
 ## 5. Ejecutar los tests
 
