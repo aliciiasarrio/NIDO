@@ -1,111 +1,125 @@
-# Ejecución local de NIDO
+# Ejecución local de NIDO (Windows / PowerShell)
 
-Estas instrucciones te guiarán para ejecutar el estado actual de la aplicación NIDO en Windows utilizando PowerShell.
+Esta guía explica cómo ejecutar la aplicación completa NIDO en un entorno Windows utilizando PowerShell.
+
+---
 
 ## Requisitos previos
 
-- **Java 21**: Necesario para compilar y ejecutar el backend.
-- **Docker Desktop**: Necesario para ejecutar la base de datos PostgreSQL en un contenedor.
+- **Java 21**: JDK instalado y disponible en el `PATH` (`java -version`).
+- **Node.js 20+ y npm**: Para compilar y ejecutar el frontend (`node -v`, `npm -v`).
+- **Docker Desktop**: En funcionamiento para el contenedor de base de datos PostgreSQL.
 
-## 1. Configurar las variables de entorno
+---
 
-En la raíz del repositorio, copia el archivo `.env.example` y renómbralo a `.env`. Completa la contraseña de la base de datos (puedes inventar una para el entorno local):
+## 1. Configuración de Variables de Entorno
 
-```powershell
-# Ejecutar en la raíz del repositorio (C:\Projects\NIDO)
-Copy-Item .env.example .env
-```
+En la raíz del repositorio (`C:\Projects\NIDO`), asegúrate de tener el archivo `.env` configurado (puedes tomar `.env.example` como referencia):
 
-Edita `.env` para que tenga un valor válido en `POSTGRES_PASSWORD`, por ejemplo:
 ```properties
 POSTGRES_DB=nido
 POSTGRES_USER=nido
 POSTGRES_PASSWORD=tu_contraseña_local
 ```
 
-## 2. Arrancar la base de datos PostgreSQL
+> **Importante:** `.env` está añadido al `.gitignore` y no debe subirse a Git.
 
-Desde la raíz del repositorio, inicia la base de datos con Docker Compose en segundo plano:
+---
+
+## 2. Iniciar la Base de Datos
+
+Desde la raíz del repositorio, inicia el servicio de PostgreSQL en Docker Compose:
 
 ```powershell
-# Ejecutar en la raíz del repositorio
 docker compose up -d
 ```
 
-Para comprobar que el contenedor de la base de datos está funcionando correctamente:
-
+Para comprobar que el contenedor está saludable:
 ```powershell
-# Ejecutar en la raíz del repositorio
 docker compose ps
 ```
 
-## 3. Arrancar el backend
+---
 
-Antes de iniciar el backend, es necesario cargar las credenciales desde el archivo `.env` al proceso de PowerShell para que Spring Boot pueda acceder a la base de datos. 
+## 3. Iniciar el Backend (Spring Boot)
 
-Primero, entra en la carpeta del backend:
+Abre una consola de PowerShell en la raíz del repositorio:
+
 ```powershell
 cd backend
-```
-
-Carga las variables de entorno sin que se impriman en pantalla:
-```powershell
-# Ejecutar en la carpeta backend
-Get-Content ..\.env | ForEach-Object {
-    if ($_ -match '^(POSTGRES_DB|POSTGRES_USER|POSTGRES_PASSWORD)=(.*)$') {
-        [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
-    }
-}
-```
-
-Inicia la aplicación Spring Boot:
-```powershell
-# Ejecutar en la carpeta backend
+$lines = Get-Content ..\.env; foreach ($line in $lines) { $p = $line.Split('=', 2); if ($p.Length -eq 2) { Set-Item -Path ('env:' + $p[0].Trim()) -Value $p[1].Trim() } }
 .\mvnw.cmd spring-boot:run
 ```
 
-## 4. Arrancar el frontend
+El backend se iniciará en `http://localhost:8080`.
+Flyway aplicará automáticamente las migraciones (`V1` a `V6`) en la base de datos conservando todos los datos existentes.
 
-Abre una nueva consola (manteniendo el backend y la base de datos funcionando) y entra en la carpeta del frontend:
+---
+
+## 4. Iniciar el Frontend (Angular)
+
+En una segunda consola de PowerShell:
+
 ```powershell
 cd frontend
-```
-
-Inicia el servidor de desarrollo de Angular:
-```powershell
 npm start
 ```
-*Nota: Este comando utiliza un proxy local configurado en `proxy.conf.json` para redirigir las peticiones de `/api/**` hacia `http://localhost:8080`. El proxy asegura que no haya problemas de CORS y solo se utiliza durante el desarrollo.*
 
-## 5. Probar la aplicación
+El servidor de desarrollo de Angular arrancará en `http://localhost:4200/`.
+Las peticiones a `/api/**` se redirigen automáticamente mediante el proxy de desarrollo hacia `http://localhost:8080`.
 
-Con el backend y el frontend funcionando, puedes acceder desde tu navegador a:
-- Interfaz gráfica: [http://localhost:4200](http://localhost:4200)
+---
 
-Deberías ver la pantalla inicial de NIDO y la lista de categorías cargando desde la base de datos.
-(También puedes verificar los endpoints directamente en [http://localhost:8080/api/status](http://localhost:8080/api/status) y `/api/categories`).
+## 5. Acceder a la Aplicación
 
-## 5. Ejecutar los tests
+Abre tu navegador en [http://localhost:4200](http://localhost:4200).
 
-Para ejecutar las pruebas automatizadas, asegúrate de que PostgreSQL está funcionando (paso 2) y de que has cargado las variables de entorno en la consola actual (paso 3). Luego, ejecuta:
+- **Registro**: Puedes registrar una cuenta nueva en `/register` con tu nombre, correo y contraseña.
+- **Inicio de sesión**: En `/login`, inicia sesión con tus credenciales.
+- **Creación de Hogar**: En el primer inicio, utiliza el asistente o el selector superior para crear tu hogar (ej: *Mi Casa*) o introduce un código de invitación recibido de otro usuario.
+- **Navegación**: Utiliza la barra superior para explorar:
+  - **Panel**: Resumen en tiempo real, alertas de stock bajo y productos próximos a caducar.
+  - **Inventario**: Consulta y añade productos o prendas, consulta existencias por ubicación y realiza entradas, consumos, traslados o ajustes.
+  - **Ubicaciones**: Organiza la jerarquía de habitaciones, armarios o baldas.
+  - **Compra**: Añade artículos a comprar o importa sugerencias de productos bajo stock mínimo.
+  - **Recetas**: Consulta qué cocinar con lo que tienes disponible, priorizando alimentos a punto de caducar.
+  - **Ropa**: Revisa prendas que llevan meses sin usarse y genera un borrador listo para vender en Vinted o donar.
+
+---
+
+## 6. Ejecución de Pruebas Automatizadas
+
+### Backend (JUnit 5 + Spring Boot Test)
+Con PostgreSQL en marcha y las variables de entorno cargadas en la consola:
 
 ```powershell
-# Ejecutar en la carpeta backend
+cd backend
+$lines = Get-Content ..\.env; foreach ($line in $lines) { $p = $line.Split('=', 2); if ($p.Length -eq 2) { Set-Item -Path ('env:' + $p[0].Trim()) -Value $p[1].Trim() } }
 .\mvnw.cmd test
 ```
 
-## 6. Detener la aplicación
+### Frontend (Vitest + Angular CLI)
+```powershell
+cd frontend
+npx ng test --no-watch
+```
 
-- **Detener el backend**: En la consola de PowerShell donde se está ejecutando `spring-boot:run`, pulsa `Ctrl+C`.
-- **Detener la base de datos**: En la raíz del repositorio, ejecuta:
+### Compilación de Producción del Frontend
+```powershell
+cd frontend
+npm run build
+```
+
+---
+
+## 7. Detener los Servicios
+
+- Para detener el backend o frontend: pulsa `Ctrl + C` en sus respectivas consolas.
+- Para detener el contenedor de base de datos conservando los datos:
   ```powershell
-  # Ejecutar en la raíz del repositorio
   docker compose stop
   ```
-  Este comando detiene los contenedores pero el volumen configurado **conserva los datos**. Las categorías y futuras tablas seguirán ahí la próxima vez que arranques.
-
-Si en algún momento deseas eliminar los contenedores y **destruir completamente los datos** almacenados en el volumen de PostgreSQL, ejecuta:
-```powershell
-# Ejecutar en la raíz del repositorio
-docker compose down -v
-```
+- Si en algún momento necesitas destruir los datos del contenedor:
+  ```powershell
+  docker compose down -v
+  ```
