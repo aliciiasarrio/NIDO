@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { LocationService } from '../../services/location.service';
 import { HouseholdService } from '../../services/household.service';
 import { InventoryService } from '../../services/inventory.service';
+import { ProductImageService } from '../../services/product-image.service';
 import { Location, LocationRequest, Item } from '../../models/nido.models';
 
 @Component({
@@ -24,10 +25,10 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         <header class="page-header">
           <div>
             <h1>Ubicaciones del Hogar</h1>
-            <p class="subtitle">Organiza los espacios de almacenamiento (habitaciones, armarios, baldas)</p>
+            <p class="subtitle">Organiza los espacios de almacenamiento en 3D: sitúa el cursor sobre cualquier tarjeta para ver su contenido</p>
           </div>
-          <button class="btn btn-primary" (click)="openCreateModal()">
-            + Nueva Ubicación
+          <button class="btn btn-primary btn-create-location" (click)="openCreateModal()">
+            <span>+</span> Nueva Ubicación
           </button>
         </header>
 
@@ -38,67 +39,183 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           {{ successMessage() }}
         </div>
 
-        <!-- Filter bar -->
-        <div class="search-bar card">
-          <input 
-            type="text" 
-            [(ngModel)]="searchQuery" 
-            placeholder="Buscar por nombre o ruta (ej. Cocina, Armario...)" 
-            class="form-control"
-          />
+        <!-- Filter bar con desplegables organizados -->
+        <div class="filters-panel card">
+          <div class="filters-grid">
+            <div class="search-input-group">
+              <span class="input-icon">🔍</span>
+              <input 
+                type="text" 
+                [(ngModel)]="searchQuery" 
+                placeholder="Buscar por nombre o ruta (ej. Despensa, Mueble alto...)" 
+                class="form-control"
+              />
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">Estancia principal:</label>
+              <select [(ngModel)]="selectedParentId" class="form-control">
+                <option [ngValue]="null">🏠 Todas las estancias</option>
+                <option *ngFor="let root of rootLocations()" [ngValue]="root.id">
+                  {{ getLocationIcon(root.name) }} {{ root.name }}
+                </option>
+              </select>
+            </div>
+
+            <div class="select-group">
+              <label class="select-label">Filtro de contenido:</label>
+              <select [(ngModel)]="stockFilter" class="form-control">
+                <option value="ALL">📦 Todas las ubicaciones</option>
+                <option value="WITH_STOCK">✅ Con productos guardados</option>
+                <option value="EMPTY">⚪ Vacías / Sin existencias</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filters-meta">
+            <span class="count-badge">
+              <strong>{{ filteredLocations().length }}</strong> {{ filteredLocations().length === 1 ? 'ubicación encontrada' : 'ubicaciones encontradas' }}
+            </span>
+            <button 
+              *ngIf="searchQuery || selectedParentId !== null || stockFilter !== 'ALL'" 
+              class="btn-reset-filters" 
+              (click)="resetFilters()"
+            >
+              ✕ Limpiar filtros
+            </button>
+          </div>
         </div>
 
-        <!-- Location List / Tree Representation -->
+        <!-- 3D Interactive Flip Cards Grid -->
         <div class="locations-grid">
           <div *ngIf="filteredLocations().length === 0" class="card empty-card">
-            <p>No hay ubicaciones registradas con ese criterio.</p>
-            <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
-              Crear primera ubicación
+            <span class="empty-icon">📍</span>
+            <p>No se han encontrado ubicaciones con los filtros seleccionados.</p>
+            <button class="btn btn-primary btn-sm mt-3" (click)="openCreateModal()">
+              Crear nueva ubicación
             </button>
           </div>
 
-          <div *ngFor="let loc of filteredLocations()" class="location-item card">
-            <div class="location-main">
-              <div class="location-details">
-                <div class="location-breadcrumb">
-                  <span class="home-crumb">{{ householdService.activeHousehold()?.name }}</span>
-                  <span class="crumb-separator">/</span>
-                  <span class="full-path">{{ loc.fullPath }}</span>
-                </div>
-                <h3>{{ loc.name }}</h3>
-
-                <!-- Items stored in this location -->
-                <div class="location-stock-summary">
-                  <span class="stock-count-badge">
-                    {{ getItemsInLocation(loc.id).length }} {{ getItemsInLocation(loc.id).length === 1 ? 'producto almacenado' : 'productos almacenados' }}
-                  </span>
-                  
-                  <div *ngIf="getItemsInLocation(loc.id).length > 0" class="location-items-chips">
-                    <span *ngFor="let it of getItemsInLocation(loc.id).slice(0, 4)" class="item-chip">
-                      {{ it.name }} ({{ getStockQtyInLocation(it, loc.id) }} {{ it.unit }})
-                    </span>
-                    <span *ngIf="getItemsInLocation(loc.id).length > 4" class="item-chip more-chip">
-                      +{{ getItemsInLocation(loc.id).length - 4 }} más
-                    </span>
+          <div 
+            *ngFor="let loc of filteredLocations()" 
+            class="flip-card"
+            [class.is-flipped]="flippedCardId() === loc.id"
+            (click)="toggleCardFlip(loc.id)"
+          >
+            <div class="flip-card-inner">
+              
+              <!-- CARA FRONTAL (FRONT FACE: Información limpia y estética) -->
+              <div class="flip-card-face flip-card-front card">
+                <div class="card-header-front">
+                  <div class="icon-avatar">
+                    <span class="emoji-icon">{{ getLocationIcon(loc.name) }}</span>
+                  </div>
+                  <div 
+                    class="badge-stock-pill" 
+                    [class.empty]="getItemsInLocation(loc.id).length === 0"
+                  >
+                    {{ getItemsInLocation(loc.id).length }} {{ getItemsInLocation(loc.id).length === 1 ? 'producto' : 'productos' }}
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="location-actions">
-              <button 
-                class="btn btn-sm btn-primary" 
-                (click)="navigateToAddItem(loc)" 
-                title="Añadir producto directamente en esta ubicación"
-              >
-                + Añadir objeto aquí
-              </button>
-              <button class="btn btn-sm btn-secondary" (click)="openEditModal(loc)" title="Editar ubicación">
-                Editar
-              </button>
-              <button class="btn btn-sm btn-outline-primary" (click)="archiveLocation(loc)" title="Archivar ubicación">
-                Archivar
-              </button>
+                <div class="card-content-front">
+                  <div class="location-path-crumb" [title]="loc.fullPath">
+                    <span class="home-prefix">{{ householdService.activeHousehold()?.name }}</span>
+                    <span class="crumb-slash">/</span>
+                    <span class="path-text">{{ loc.fullPath }}</span>
+                  </div>
+
+                  <h3 class="location-title">{{ loc.name }}</h3>
+
+                  <!-- Vista previa visual de productos (thumbnails) -->
+                  <div class="preview-products-box" *ngIf="getItemsInLocation(loc.id).length > 0">
+                    <span class="preview-label">Contenido en este espacio:</span>
+                    <div class="thumbnails-preview-row">
+                      <div 
+                        *ngFor="let it of getItemsInLocation(loc.id).slice(0, 4)" 
+                        class="thumb-wrapper" 
+                        [title]="it.name + ' (' + getStockQtyInLocation(it, loc.id) + ' ' + it.unit + ')'"
+                      >
+                        <img [src]="productImageService.getImage(it)" [alt]="it.name" class="mini-thumb" />
+                      </div>
+                      <span *ngIf="getItemsInLocation(loc.id).length > 4" class="more-badge">
+                        +{{ getItemsInLocation(loc.id).length - 4 }} más
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="empty-location-hint" *ngIf="getItemsInLocation(loc.id).length === 0">
+                    <span>Espacio vacío disponible</span>
+                  </div>
+                </div>
+
+                <div class="card-footer-front">
+                  <span class="flip-callout">
+                    <span class="flip-rotate-icon">🔄</span> Pasa el ratón para ver existencias y acciones
+                  </span>
+                </div>
+              </div>
+
+              <!-- CARA TRASERA (BACK FACE: Al situar el ratón encima) -->
+              <div class="flip-card-face flip-card-back card">
+                <div class="back-header">
+                  <div class="back-title-group">
+                    <span class="back-icon">{{ getLocationIcon(loc.name) }}</span>
+                    <div>
+                      <h4 class="back-heading">{{ loc.name }}</h4>
+                      <span class="back-subpath">{{ loc.fullPath }}</span>
+                    </div>
+                  </div>
+                  <span class="back-badge">{{ getItemsInLocation(loc.id).length }} ítems</span>
+                </div>
+
+                <!-- Lista con scroll de productos -->
+                <div class="back-items-scroll custom-scroll">
+                  <div *ngIf="getItemsInLocation(loc.id).length === 0" class="empty-stock-state">
+                    <span class="empty-box-icon">📦</span>
+                    <p>No hay productos guardados en esta ubicación todavía.</p>
+                  </div>
+
+                  <div *ngFor="let it of getItemsInLocation(loc.id)" class="back-item-row">
+                    <img [src]="productImageService.getImage(it)" [alt]="it.name" class="back-thumb" />
+                    <div class="back-item-meta">
+                      <span class="back-item-title" [title]="it.name">{{ it.name }}</span>
+                      <span class="back-item-quantity">{{ getStockQtyInLocation(it, loc.id) }} {{ it.unit }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Acciones ordenadas y organizadas -->
+                <div class="back-footer-actions">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-primary btn-add-here" 
+                    (click)="$event.stopPropagation(); navigateToAddItem(loc)"
+                    title="Añadir producto directamente aquí"
+                  >
+                    + Añadir objeto aquí
+                  </button>
+
+                  <div class="back-secondary-row">
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-secondary flex-1" 
+                      (click)="$event.stopPropagation(); openEditModal(loc)"
+                    >
+                      ✏️ Editar
+                    </button>
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-outline-danger flex-1" 
+                      (click)="$event.stopPropagation(); archiveLocation(loc)"
+                    >
+                      🗑️ Archivar
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           </div>
         </div>
@@ -193,128 +310,473 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
 
       .subtitle {
         color: var(--color-text-muted);
+        font-size: 0.95rem;
+      }
+
+      .btn-create-location {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(45, 106, 79, 0.2);
       }
     }
 
-    .search-bar {
-      padding: 1rem;
-      margin-bottom: 1.5rem;
+    /* Filters Panel */
+    .filters-panel {
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+
+      .filters-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1.5fr;
+        gap: 1.25rem;
+        align-items: flex-end;
+
+        @media (max-width: 900px) {
+          grid-template-columns: 1fr;
+        }
+
+        .search-input-group {
+          position: relative;
+
+          .input-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            font-size: 0.9rem;
+          }
+
+          input {
+            padding-left: 2.35rem;
+          }
+        }
+
+        .select-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+
+          .select-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--color-text-muted);
+          }
+        }
+      }
+
+      .filters-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+
+        .count-badge {
+          font-size: 0.825rem;
+          color: var(--color-text-muted);
+
+          strong {
+            color: var(--color-primary);
+            font-weight: 700;
+          }
+        }
+
+        .btn-reset-filters {
+          background: none;
+          border: none;
+          color: var(--color-danger);
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 0.2rem 0.5rem;
+          border-radius: var(--radius-sm);
+
+          &:hover {
+            background: #fee2e2;
+          }
+        }
+      }
     }
 
+    /* 3D Flip Card System */
     .locations-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 1rem;
+      gap: 1.75rem;
     }
 
-    .location-item {
+    .flip-card {
+      background-color: transparent;
+      height: 310px;
+      perspective: 1200px;
+      cursor: pointer;
+
+      &:hover .flip-card-inner,
+      &.is-flipped .flip-card-inner {
+        transform: rotateY(180deg);
+      }
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: left;
+      transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .flip-card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: var(--radius-lg);
+      padding: 1.6rem;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: space-between;
-      padding: 1.25rem 1.5rem;
-      transition: transform var(--transition-fast);
+      border: 1px solid var(--color-border);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    /* Front Face */
+    .flip-card-front {
+      background: linear-gradient(155deg, #ffffff 0%, #faf8f5 100%);
 
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-md);
+        border-color: rgba(45, 106, 79, 0.4);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
       }
 
-      .location-main {
+      .card-header-front {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 1rem;
 
-        .location-icon {
-          font-size: 1.8rem;
-          background: var(--color-sand);
-          padding: 0.5rem;
+        .icon-avatar {
+          width: 48px;
+          height: 48px;
           border-radius: var(--radius-md);
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+
+          .emoji-icon {
+            font-size: 1.6rem;
+          }
         }
 
-        .location-details {
-          h3 {
-            font-size: 1.05rem;
-            margin-bottom: 0.2rem;
-          }
+        .badge-stock-pill {
+          font-size: 0.75rem;
+          font-weight: 700;
+          padding: 0.35rem 0.75rem;
+          border-radius: var(--radius-pill);
+          background: #d8f3dc;
+          color: #1b4332;
 
-          .full-path {
-            font-size: 0.8rem;
+          &.empty {
+            background: var(--color-sand);
             color: var(--color-text-muted);
+            font-weight: 600;
+          }
+        }
+      }
+
+      .card-content-front {
+        margin-top: 0.75rem;
+
+        .location-path-crumb {
+          font-size: 0.75rem;
+          color: var(--color-text-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          margin-bottom: 0.35rem;
+
+          .home-prefix {
             font-weight: 500;
           }
 
-          .location-breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
+          .crumb-slash {
+            margin: 0 0.3rem;
+            opacity: 0.4;
+          }
+
+          .path-text {
+            font-weight: 600;
+            color: var(--color-primary);
+          }
+        }
+
+        .location-title {
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: var(--color-text-main);
+          margin-bottom: 0.75rem;
+        }
+
+        .preview-products-box {
+          .preview-label {
             font-size: 0.75rem;
             color: var(--color-text-muted);
-            margin-bottom: 0.35rem;
-
-            .crumb-separator { opacity: 0.5; }
-            .home-crumb { font-weight: 500; }
-            .full-path { font-weight: 600; color: var(--color-primary); }
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
           }
 
-          .location-stock-summary {
-            margin-top: 0.5rem;
+          .thumbnails-preview-row {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
 
-            .stock-count-badge {
+            .thumb-wrapper {
+              width: 38px;
+              height: 38px;
+              border-radius: 8px;
+              overflow: hidden;
+              background: #ffffff;
+              border: 1px solid rgba(0, 0, 0, 0.1);
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+
+              .mini-thumb {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+              }
+            }
+
+            .more-badge {
               font-size: 0.75rem;
-              background: var(--color-sand);
-              padding: 0.2rem 0.5rem;
-              border-radius: var(--radius-sm);
-              color: var(--color-text-muted);
-              font-weight: 600;
-              display: inline-block;
+              font-weight: 700;
+              color: var(--color-primary);
+              background: var(--color-primary-light);
+              padding: 0.25rem 0.5rem;
+              border-radius: var(--radius-pill);
             }
           }
+        }
 
-          .location-items-chips {
+        .empty-location-hint {
+          padding: 0.5rem 0.75rem;
+          background: rgba(0, 0, 0, 0.02);
+          border-radius: var(--radius-sm);
+          font-size: 0.8rem;
+          color: var(--color-text-muted);
+          display: inline-block;
+        }
+      }
+
+      .card-footer-front {
+        margin-top: auto;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+
+        .flip-callout {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          font-size: 0.775rem;
+          font-weight: 600;
+          color: var(--color-primary);
+
+          .flip-rotate-icon {
+            display: inline-block;
+            transition: transform 0.3s ease;
+          }
+        }
+      }
+    }
+
+    /* Back Face */
+    .flip-card-back {
+      background: #ffffff;
+      transform: rotateY(180deg);
+      border-color: var(--color-primary);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+
+      .back-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+        .back-title-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          min-width: 0;
+
+          .back-icon {
+            font-size: 1.35rem;
+          }
+
+          .back-heading {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-text-main);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .back-subpath {
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+
+        .back-badge {
+          font-size: 0.725rem;
+          font-weight: 700;
+          color: var(--color-primary);
+          background: var(--color-primary-light);
+          padding: 0.2rem 0.5rem;
+          border-radius: var(--radius-pill);
+          white-space: nowrap;
+        }
+      }
+
+      .back-items-scroll {
+        flex: 1;
+        overflow-y: auto;
+        margin: 0.65rem 0;
+        padding-right: 0.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        max-height: 125px;
+
+        .empty-stock-state {
+          text-align: center;
+          padding: 1.5rem 0.5rem;
+          color: var(--color-text-muted);
+
+          .empty-box-icon {
+            font-size: 1.75rem;
+            display: block;
+            margin-bottom: 0.25rem;
+            opacity: 0.6;
+          }
+
+          p {
+            font-size: 0.8rem;
+            margin: 0;
+          }
+        }
+
+        .back-item-row {
+          display: flex;
+          align-items: center;
+          gap: 0.65rem;
+          padding: 0.35rem 0.5rem;
+          background: var(--color-sand);
+          border-radius: var(--radius-sm);
+          transition: background 0.15s ease;
+
+          &:hover {
+            background: #ede8e1;
+          }
+
+          .back-thumb {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+          }
+
+          .back-item-meta {
             display: flex;
-            gap: 0.35rem;
-            flex-wrap: wrap;
-            margin-top: 0.4rem;
+            justify-content: space-between;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
 
-            .item-chip {
-              background: var(--color-cream);
-              border: 1px solid var(--color-border);
-              padding: 0.15rem 0.5rem;
-              border-radius: var(--radius-pill);
-              font-size: 0.75rem;
+            .back-item-title {
+              font-size: 0.775rem;
+              font-weight: 600;
               color: var(--color-text-main);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              padding-right: 0.5rem;
+            }
 
-              &.more-chip {
-                font-weight: 600;
-                color: var(--color-primary);
-                background: var(--color-primary-light);
-              }
+            .back-item-quantity {
+              font-size: 0.75rem;
+              font-weight: 700;
+              color: var(--color-primary);
+              white-space: nowrap;
             }
           }
         }
       }
 
-      .location-actions {
+      .back-footer-actions {
+        margin-top: auto;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
         display: flex;
+        flex-direction: column;
         gap: 0.5rem;
-        flex-wrap: wrap;
+
+        .btn-add-here {
+          width: 100%;
+          font-weight: 600;
+          box-shadow: 0 2px 6px rgba(45, 106, 79, 0.15);
+        }
+
+        .back-secondary-row {
+          display: flex;
+          gap: 0.5rem;
+
+          .flex-1 {
+            flex: 1;
+          }
+        }
       }
     }
 
     .empty-card {
       grid-column: 1 / -1;
       text-align: center;
-      padding: 3rem;
+      padding: 3.5rem 2rem;
       color: var(--color-text-muted);
 
-      span {
-        font-size: 2.5rem;
+      .empty-icon {
+        font-size: 2.75rem;
         display: block;
         margin-bottom: 0.5rem;
       }
     }
 
-    /* Modal */
+    /* Modal Backdrop */
     .modal-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -356,6 +818,9 @@ export class LocationsComponent {
   locations = signal<Location[]>([]);
   items = signal<Item[]>([]);
   searchQuery = '';
+  selectedParentId: number | null = null;
+  stockFilter: 'ALL' | 'WITH_STOCK' | 'EMPTY' = 'ALL';
+
   errorMessage = signal<string>('');
   successMessage = signal<string>('');
 
@@ -365,8 +830,11 @@ export class LocationsComponent {
   modalParentId: number | null = null;
   locationToArchive = signal<Location | null>(null);
 
+  flippedCardId = signal<number | null>(null);
+
   constructor(
     public householdService: HouseholdService,
+    public productImageService: ProductImageService,
     private locationService: LocationService,
     private inventoryService: InventoryService,
     private router: Router
@@ -403,6 +871,63 @@ export class LocationsComponent {
       .reduce((acc, cur) => acc + cur.quantity, 0);
   }
 
+  rootLocations(): Location[] {
+    return this.locations().filter(l => !l.parentId);
+  }
+
+  filteredLocations(): Location[] {
+    const q = this.searchQuery.toLowerCase().trim();
+    return this.locations().filter(l => {
+      const matchesQuery = !q || l.name.toLowerCase().includes(q) || l.fullPath.toLowerCase().includes(q);
+      
+      let matchesParent = true;
+      if (this.selectedParentId !== null) {
+        const rootLoc = this.locations().find(p => p.id === this.selectedParentId);
+        const rootName = rootLoc ? rootLoc.name : '';
+        matchesParent = l.id === this.selectedParentId || 
+                        l.parentId === this.selectedParentId || 
+                        (rootName.length > 0 && l.fullPath.startsWith(rootName));
+      }
+
+      const itemCount = this.getItemsInLocation(l.id).length;
+      let matchesStock = true;
+      if (this.stockFilter === 'WITH_STOCK') {
+        matchesStock = itemCount > 0;
+      } else if (this.stockFilter === 'EMPTY') {
+        matchesStock = itemCount === 0;
+      }
+
+      return matchesQuery && matchesParent && matchesStock;
+    });
+  }
+
+  resetFilters() {
+    this.searchQuery = '';
+    this.selectedParentId = null;
+    this.stockFilter = 'ALL';
+  }
+
+  getLocationIcon(name: string): string {
+    const n = name.toLowerCase();
+    if (n.includes('cocina')) return '🍳';
+    if (n.includes('frigo') || n.includes('nevera')) return '❄️';
+    if (n.includes('congelador')) return '🧊';
+    if (n.includes('despensa')) return '🥫';
+    if (n.includes('armario')) return '🚪';
+    if (n.includes('cómoda') || n.includes('cajón') || n.includes('cajon')) return '🗄️';
+    if (n.includes('dormitorio') || n.includes('habitaci')) return '🛏️';
+    if (n.includes('baño') || n.includes('aseo')) return '🛁';
+    if (n.includes('salón') || n.includes('comedor')) return '🛋️';
+    if (n.includes('balda') || n.includes('estanter')) return '📚';
+    if (n.includes('trastero') || n.includes('garaje')) return '📦';
+    if (n.includes('mueble')) return '🪑';
+    return '📍';
+  }
+
+  toggleCardFlip(locId: number) {
+    this.flippedCardId.update(curr => curr === locId ? null : locId);
+  }
+
   navigateToAddItem(loc: Location) {
     this.router.navigate(['/inventory'], {
       queryParams: {
@@ -413,17 +938,8 @@ export class LocationsComponent {
     });
   }
 
-  filteredLocations(): Location[] {
-    const q = this.searchQuery.toLowerCase().trim();
-    if (!q) return this.locations();
-    return this.locations().filter(l => 
-      l.name.toLowerCase().includes(q) || l.fullPath.toLowerCase().includes(q)
-    );
-  }
-
   availableParents(): Location[] {
     if (!this.editingLocation) return this.locations();
-    // Excluir a la propia ubicación para evitar auto-referencias
     return this.locations().filter(l => l.id !== this.editingLocation?.id);
   }
 
@@ -437,12 +953,13 @@ export class LocationsComponent {
   openEditModal(loc: Location) {
     this.editingLocation = loc;
     this.modalName = loc.name;
-    this.modalParentId = loc.parentId;
+    this.modalParentId = loc.parentId || null;
     this.showModal.set(true);
   }
 
   closeModal() {
     this.showModal.set(false);
+    this.editingLocation = null;
   }
 
   saveLocation() {
@@ -457,7 +974,7 @@ export class LocationsComponent {
     if (this.editingLocation) {
       this.locationService.updateLocation(active.id, this.editingLocation.id, payload).subscribe({
         next: () => {
-          this.successMessage.set('Ubicación actualizada correctamente');
+          this.successMessage.set(`Ubicación "${payload.name}" actualizada con éxito.`);
           this.closeModal();
           this.loadLocations();
         },
@@ -466,7 +983,7 @@ export class LocationsComponent {
     } else {
       this.locationService.createLocation(active.id, payload).subscribe({
         next: () => {
-          this.successMessage.set('Ubicación creada con éxito');
+          this.successMessage.set(`Ubicación "${payload.name}" creada con éxito.`);
           this.closeModal();
           this.loadLocations();
         },
