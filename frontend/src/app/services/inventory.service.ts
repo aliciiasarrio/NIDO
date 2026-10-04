@@ -25,8 +25,12 @@ export class InventoryService {
     return this.http.put<Item>(`/api/households/${householdId}/items/${itemId}`, request, { withCredentials: true });
   }
 
+  deleteItem(householdId: number, itemId: number, permanent = true): Observable<void> {
+    return this.http.delete<void>(`/api/households/${householdId}/items/${itemId}?archiveOnly=${!permanent}`, { withCredentials: true });
+  }
+
   archiveItem(householdId: number, itemId: number): Observable<void> {
-    return this.http.delete<void>(`/api/households/${householdId}/items/${itemId}`, { withCredentials: true });
+    return this.http.delete<void>(`/api/households/${householdId}/items/${itemId}?archiveOnly=true`, { withCredentials: true });
   }
 
   recordClothingWorn(householdId: number, itemId: number): Observable<void> {

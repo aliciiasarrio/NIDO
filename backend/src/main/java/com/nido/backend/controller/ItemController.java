@@ -63,10 +63,15 @@ public class ItemController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void archiveItem(@PathVariable Long householdId,
-                            @PathVariable Long id,
-                            Principal principal) {
-        inventoryService.archiveItem(householdId, id, principal.getName());
+    public void deleteItem(@PathVariable Long householdId,
+                           @PathVariable Long id,
+                           @RequestParam(required = false, defaultValue = "false") boolean archiveOnly,
+                           Principal principal) {
+        if (archiveOnly) {
+            inventoryService.archiveItem(householdId, id, principal.getName());
+        } else {
+            inventoryService.deleteItem(householdId, id, principal.getName());
+        }
     }
 
     @PostMapping("/{id}/wear")

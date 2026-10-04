@@ -146,5 +146,16 @@ class FullDomainFlowIntegrationTest {
         var recipes = recipeService.getRecommendations(household.id(), userEmail1);
         assertNotNull(recipes);
         assertFalse(recipes.isEmpty());
+
+        // 10. Archivar producto
+        inventoryService.archiveItem(household.id(), item.id(), userEmail1);
+        var activeItems = inventoryService.getItemsByHousehold(household.id(), false, userEmail1);
+        assertTrue(activeItems.stream().noneMatch(i -> i.id().equals(item.id())));
+
+        // 11. Eliminar producto definitivamente
+        inventoryService.deleteItem(household.id(), item.id(), userEmail1);
+        assertThrows(IllegalArgumentException.class, () -> {
+            inventoryService.getItemById(household.id(), item.id(), userEmail1);
+        });
     }
 }

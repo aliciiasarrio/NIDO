@@ -174,8 +174,8 @@ import { ProductImageService } from '../../services/product-image.service';
                   <button class="btn btn-sm btn-outline-primary" (click)="openEditItemModal(item)">
                     Editar
                   </button>
-                  <button class="btn btn-sm btn-danger" (click)="archiveItem(item)">
-                    Archivar
+                  <button class="btn btn-sm btn-danger" (click)="deleteItem(item)" title="Eliminar este producto">
+                    🗑️ Eliminar
                   </button>
                 </div>
               </div>
@@ -385,6 +385,9 @@ import { ProductImageService } from '../../services/product-image.service';
             </div>
 
             <div class="modal-actions">
+              <button *ngIf="editingItem" type="button" class="btn btn-outline-danger me-auto" (click)="deleteItem(editingItem)">
+                🗑️ Eliminar este producto
+              </button>
               <button class="btn btn-secondary" (click)="closeItemModal()">Cancelar</button>
               <button class="btn btn-primary" [disabled]="!modalItemName.trim() || isSubmitting()" (click)="saveItem()">
                 {{ isSubmitting() ? 'Guardando...' : (editingItem ? 'Guardar Cambios' : 'Crear Producto') }}
@@ -1212,18 +1215,31 @@ export class InventoryComponent implements OnInit {
     }
   }
 
-  archiveItem(item: Item) {
-    if (!confirm(`¿Estás seguro de archivar "${item.name}"? Si tiene existencias, se registrarán salidas automáticas.`)) return;
+  deleteItem(item: Item) {
+    const isFood = item.categoryName === 'Alimentos';
+    const isClothes = item.categoryName === 'Ropa';
+    const typeLabel = isClothes ? 'la prenda' : isFood ? 'el alimento' : 'el producto';
+
+    if (!confirm(`¿Estás seguro de que deseas eliminar ${typeLabel} "${item.name}"? Se retirará de tu hogar y de las existencias.`)) {
+      return;
+    }
     const active = this.householdService.activeHousehold();
     if (!active) return;
 
-    this.inventoryService.archiveItem(active.id, item.id).subscribe({
+    this.inventoryService.deleteItem(active.id, item.id).subscribe({
       next: () => {
-        this.successMessage.set(`Producto "${item.name}" archivado correctamente.`);
+        this.successMessage.set(`${isClothes ? 'Prenda' : isFood ? 'Alimento' : 'Producto'} "${item.name}" eliminado correctamente.`);
+        if (this.editingItem && this.editingItem.id === item.id) {
+          this.closeItemModal();
+        }
         this.loadData();
       },
-      error: (err) => this.errorMessage.set(err.error?.error || 'Error al archivar')
+      error: (err) => this.errorMessage.set(err.error?.error || 'Error al eliminar el producto')
     });
+  }
+
+  archiveItem(item: Item) {
+    this.deleteItem(item);
   }
 
   recordWear(item: Item) {

@@ -77,6 +77,9 @@ import { ProductImageService } from '../../services/product-image.service';
               <button class="btn btn-sm btn-outline-primary" (click)="generateDraft(item)">
                 Copiar borrador para venta / donación
               </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteClothing(item)">
+                🗑️ Eliminar prenda
+              </button>
             </div>
           </div>
         </div>
@@ -274,6 +277,22 @@ export class ClothingComponent {
         this.successMessage.set(`¡Genial! Has usado "${item.name}" hoy.`);
         this.loadUnworn();
       }
+    });
+  }
+
+  deleteClothing(item: Item) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la prenda "${item.name}"? Se retirará de tu armario y del inventario.`)) {
+      return;
+    }
+    const active = this.householdService.activeHousehold();
+    if (!active) return;
+
+    this.inventoryService.deleteItem(active.id, item.id).subscribe({
+      next: () => {
+        this.successMessage.set(`Prenda "${item.name}" eliminada correctamente.`);
+        this.loadUnworn();
+      },
+      error: (err) => alert(err.error?.error || 'Error al eliminar la prenda')
     });
   }
 
