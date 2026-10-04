@@ -100,7 +100,7 @@ BEGIN
     DELETE FROM inventory_movements WHERE item_id IN (SELECT id FROM items WHERE household_id = v_household_id);
     DELETE FROM shopping_list_entries WHERE household_id = v_household_id;
     DELETE FROM stock WHERE item_id IN (SELECT id FROM items WHERE household_id = v_household_id);
-    DELETE FROM items WHERE household_id = v_household_id AND id NOT IN (SELECT id FROM items WHERE household_id = v_household_id AND name ILIKE '%Aceite de oliva%');
+    DELETE FROM items WHERE household_id = v_household_id;
     DELETE FROM locations WHERE household_id = v_household_id;
 
     -- 2. UBICACIONES JERÁRQUICAS
@@ -136,15 +136,9 @@ BEGIN
     INSERT INTO locations (household_id, parent_id, name) VALUES (v_household_id, v_loc_trastero, 'Estantería de almacenaje') RETURNING id INTO v_sub_estante_trastero;
 
     -- 3. ITEMS / PRODUCTOS
-    -- Obtener o crear Aceite de Oliva
-    SELECT id INTO v_item_aceite FROM items WHERE household_id = v_household_id AND name ILIKE '%Aceite de oliva%' LIMIT 1;
-    IF v_item_aceite IS NULL THEN
-        INSERT INTO items (household_id, category_id, name, description, item_type, minimum_quantity, unit, market_reference, market_price_min, market_price_max)
-        VALUES (v_household_id, v_cat_alimentos, 'Aceite de oliva virgen extra', 'Botella 1L primera presión en frío', 'CONSUMABLE', 2, 'botellas', 'Mercadona / Consum', 7.50, 9.95)
-        RETURNING id INTO v_item_aceite;
-    ELSE
-        UPDATE items SET description = 'Botella 1L primera presión en frío' WHERE id = v_item_aceite;
-    END IF;
+    INSERT INTO items (household_id, category_id, name, description, item_type, minimum_quantity, unit, market_reference, market_price_min, market_price_max)
+    VALUES (v_household_id, v_cat_alimentos, 'Aceite de oliva virgen extra', 'Botella 1L primera presión en frío', 'CONSUMABLE', 2, 'botellas', 'Mercadona / Consum', 7.50, 9.95)
+    RETURNING id INTO v_item_aceite;
 
     -- Alimentos Consumibles
     INSERT INTO items (household_id, category_id, name, description, item_type, minimum_quantity, unit, market_reference, market_price_min, market_price_max)

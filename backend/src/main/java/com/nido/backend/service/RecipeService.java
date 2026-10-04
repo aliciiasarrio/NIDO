@@ -136,6 +136,8 @@ public class RecipeService {
     }
 
     private String normalize(String str) {
-        return str.toLowerCase(Locale.ROOT).trim();
+        if (str == null) return "";
+        String nfd = java.text.Normalizer.normalize(str, java.text.Normalizer.Form.NFD);
+        return nfd.replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT).trim();
     }
 }
