@@ -39,6 +39,7 @@ import { ProductImageService } from '../../services/product-image.service';
         </header>
 
         <div *ngIf="successMessage()" class="alert alert-success">{{ successMessage() }}</div>
+        <div *ngIf="errorMessage()" class="alert alert-danger">{{ errorMessage() }}</div>
 
         <!-- Unworn Items Grid -->
         <div class="clothing-grid">
@@ -101,6 +102,30 @@ import { ProductImageService } from '../../services/product-image.service';
                 Copiar al portapapeles
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- In-App Aesthetic Confirmation Delete Modal -->
+      <div *ngIf="itemToDelete()" class="modal-backdrop">
+        <div class="modal-card card confirm-modal">
+          <div class="confirm-icon-box clothes-icon-box">
+            <span class="confirm-icon">👕</span>
+          </div>
+          <div class="confirm-content">
+            <h3>¿Eliminar prenda?</h3>
+            <p class="confirm-desc">
+              ¿Estás seguro de que deseas eliminar <strong>"{{ itemToDelete()?.name }}"</strong>?
+            </p>
+            <p class="confirm-sub">Esta prenda se retirará definitivamente de tu armario y del inventario del hogar.</p>
+          </div>
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelDelete()">
+              Cancelar
+            </button>
+            <button type="button" class="btn btn-danger" (click)="confirmDelete()">
+              Sí, eliminar prenda
+            </button>
           </div>
         </div>
       </div>
@@ -239,6 +264,8 @@ export class ClothingComponent {
   unwornItems = signal<Item[]>([]);
   daysThreshold = 90;
   successMessage = signal<string>('');
+  errorMessage = signal<string>('');
+  itemToDelete = signal<Item | null>(null);
 
   showDraftModal = signal<boolean>(false);
   draftText = signal<string>('');
@@ -281,18 +308,30 @@ export class ClothingComponent {
   }
 
   deleteClothing(item: Item) {
-    if (!confirm(`¿Estás seguro de que deseas eliminar la prenda "${item.name}"? Se retirará de tu armario y del inventario.`)) {
-      return;
-    }
+    this.itemToDelete.set(item);
+  }
+
+  cancelDelete() {
+    this.itemToDelete.set(null);
+  }
+
+  confirmDelete() {
+    const item = this.itemToDelete();
+    if (!item) return;
     const active = this.householdService.activeHousehold();
     if (!active) return;
 
     this.inventoryService.deleteItem(active.id, item.id).subscribe({
       next: () => {
         this.successMessage.set(`Prenda "${item.name}" eliminada correctamente.`);
+        this.errorMessage.set('');
+        this.itemToDelete.set(null);
         this.loadUnworn();
       },
-      error: (err) => alert(err.error?.error || 'Error al eliminar la prenda')
+      error: (err) => {
+        this.errorMessage.set(err.error?.error || 'Error al eliminar la prenda');
+        this.itemToDelete.set(null);
+      }
     });
   }
 

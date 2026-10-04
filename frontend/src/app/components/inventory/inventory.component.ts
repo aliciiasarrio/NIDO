@@ -464,6 +464,38 @@ import { ProductImageService } from '../../services/product-image.service';
           </div>
         </div>
       </div>
+
+      <!-- In-App Aesthetic Confirmation Delete Modal -->
+      <div *ngIf="itemToDelete()" class="modal-backdrop">
+        <div class="modal-card card confirm-modal">
+          <div 
+            class="confirm-icon-box"
+            [class.food-icon-box]="itemToDelete()?.categoryName === 'Alimentos'"
+            [class.clothes-icon-box]="itemToDelete()?.categoryName === 'Ropa'"
+          >
+            <span class="confirm-icon">
+              {{ itemToDelete()?.categoryName === 'Alimentos' ? '🥫' : (itemToDelete()?.categoryName === 'Ropa' ? '👕' : '🗑️') }}
+            </span>
+          </div>
+          <div class="confirm-content">
+            <h3>¿Eliminar {{ getItemTypeLabel(itemToDelete()) }}?</h3>
+            <p class="confirm-desc">
+              ¿Estás seguro de que deseas eliminar <strong>"{{ itemToDelete()?.name }}"</strong>?
+            </p>
+            <p class="confirm-sub">
+              {{ getDeleteSubtext(itemToDelete()) }}
+            </p>
+          </div>
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelDeleteItem()">
+              Cancelar
+            </button>
+            <button type="button" class="btn btn-danger" (click)="confirmDeleteItem()">
+              Sí, eliminar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -934,6 +966,8 @@ export class InventoryComponent implements OnInit {
   movementBatch = '';
   movementExpiration: string | null = null;
 
+  itemToDelete = signal<Item | null>(null);
+
   private preselectedLocationId: number | null = null;
 
   constructor(
@@ -1215,26 +1249,54 @@ export class InventoryComponent implements OnInit {
     }
   }
 
-  deleteItem(item: Item) {
-    const isFood = item.categoryName === 'Alimentos';
-    const isClothes = item.categoryName === 'Ropa';
-    const typeLabel = isClothes ? 'la prenda' : isFood ? 'el alimento' : 'el producto';
+  getItemTypeLabel(item: Item | null): string {
+    if (!item) return 'producto';
+    if (item.categoryName === 'Alimentos') return 'alimento';
+    if (item.categoryName === 'Ropa') return 'prenda';
+    return 'producto';
+  }
 
-    if (!confirm(`¿Estás seguro de que deseas eliminar ${typeLabel} "${item.name}"? Se retirará de tu hogar y de las existencias.`)) {
-      return;
+  getDeleteSubtext(item: Item | null): string {
+    if (!item) return '';
+    if (item.categoryName === 'Alimentos') {
+      return 'Se retirarán todas sus existencias y se actualizarán las recetas asociadas.';
     }
+    if (item.categoryName === 'Ropa') {
+      return 'Esta prenda se retirará de tu armario y del inventario del hogar.';
+    }
+    return 'Este producto y todas sus existencias se retirarán del hogar.';
+  }
+
+  deleteItem(item: Item) {
+    this.itemToDelete.set(item);
+  }
+
+  cancelDeleteItem() {
+    this.itemToDelete.set(null);
+  }
+
+  confirmDeleteItem() {
+    const item = this.itemToDelete();
+    if (!item) return;
     const active = this.householdService.activeHousehold();
     if (!active) return;
 
     this.inventoryService.deleteItem(active.id, item.id).subscribe({
       next: () => {
+        const isFood = item.categoryName === 'Alimentos';
+        const isClothes = item.categoryName === 'Ropa';
         this.successMessage.set(`${isClothes ? 'Prenda' : isFood ? 'Alimento' : 'Producto'} "${item.name}" eliminado correctamente.`);
+        this.errorMessage.set('');
         if (this.editingItem && this.editingItem.id === item.id) {
           this.closeItemModal();
         }
+        this.itemToDelete.set(null);
         this.loadData();
       },
-      error: (err) => this.errorMessage.set(err.error?.error || 'Error al eliminar el producto')
+      error: (err) => {
+        this.errorMessage.set(err.error?.error || 'Error al eliminar el producto');
+        this.itemToDelete.set(null);
+      }
     });
   }
 

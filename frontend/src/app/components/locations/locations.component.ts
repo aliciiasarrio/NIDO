@@ -150,6 +150,30 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           </div>
         </div>
       </div>
+
+      <!-- In-App Confirmation Archive Location Modal -->
+      <div *ngIf="locationToArchive()" class="modal-backdrop">
+        <div class="modal-card card confirm-modal">
+          <div class="confirm-icon-box">
+            <span class="confirm-icon">📍</span>
+          </div>
+          <div class="confirm-content">
+            <h3>¿Archivar ubicación?</h3>
+            <p class="confirm-desc">
+              ¿Estás seguro de que deseas archivar <strong>"{{ locationToArchive()?.name }}"</strong>?
+            </p>
+            <p class="confirm-sub">Solo es posible si no contiene sububicaciones activas en su interior.</p>
+          </div>
+          <div class="confirm-actions">
+            <button type="button" class="btn btn-secondary" (click)="cancelArchiveLocation()">
+              Cancelar
+            </button>
+            <button type="button" class="btn btn-danger" (click)="confirmArchiveLocation()">
+              Sí, archivar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -339,6 +363,7 @@ export class LocationsComponent {
   editingLocation: Location | null = null;
   modalName = '';
   modalParentId: number | null = null;
+  locationToArchive = signal<Location | null>(null);
 
   constructor(
     public householdService: HouseholdService,
@@ -451,16 +476,30 @@ export class LocationsComponent {
   }
 
   archiveLocation(loc: Location) {
-    if (!confirm(`¿Deseas archivar la ubicación "${loc.name}"? Solo es posible si no contiene sububicaciones activas.`)) return;
+    this.locationToArchive.set(loc);
+  }
+
+  cancelArchiveLocation() {
+    this.locationToArchive.set(null);
+  }
+
+  confirmArchiveLocation() {
+    const loc = this.locationToArchive();
+    if (!loc) return;
     const active = this.householdService.activeHousehold();
     if (!active) return;
 
     this.locationService.archiveLocation(active.id, loc.id).subscribe({
       next: () => {
-        this.successMessage.set('Ubicación archivada');
+        this.successMessage.set(`Ubicación "${loc.name}" archivada correctamente.`);
+        this.errorMessage.set('');
+        this.locationToArchive.set(null);
         this.loadLocations();
       },
-      error: (err) => this.errorMessage.set(err.error?.error || 'Error al archivar la ubicación')
+      error: (err) => {
+        this.errorMessage.set(err.error?.error || 'Error al archivar la ubicación');
+        this.locationToArchive.set(null);
+      }
     });
   }
 }
