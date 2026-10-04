@@ -127,7 +127,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
 
                   <h3 class="location-title">{{ loc.name }}</h3>
 
-                  <!-- Vista previa visual de productos (thumbnails) -->
+                  <!-- Vista previa visual de productos bien integrada directamente bajo el título -->
                   <div class="preview-products-box" *ngIf="getItemsInLocation(loc.id).length > 0">
                     <span class="preview-label">Contenido en este espacio:</span>
                     <div class="thumbnails-preview-row">
@@ -145,12 +145,12 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                   </div>
 
                   <div class="empty-location-hint" *ngIf="getItemsInLocation(loc.id).length === 0">
-                    <span>Espacio vacío disponible</span>
+                    <span>📦 Espacio disponible sin existencias</span>
                   </div>
                 </div>
               </div>
 
-              <!-- CARA TRASERA (BACK FACE: Al situar el ratón encima) -->
+              <!-- CARA TRASERA (BACK FACE: Al situar el ratón encima o hacer click) -->
               <div class="flip-card-face flip-card-back card">
                 <div class="back-header">
                   <div class="back-title-group">
@@ -162,20 +162,39 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                   </div>
                 </div>
 
-                <!-- Lista con scroll de productos -->
-                <div class="back-items-scroll custom-scroll">
+                <!-- Lista fija de productos (MÁXIMO 2 productos, SIN SCROLL) -->
+                <div class="back-items-container">
                   <div *ngIf="getItemsInLocation(loc.id).length === 0" class="empty-stock-state">
                     <span class="empty-box-icon">📦</span>
-                    <p>No hay productos guardados en esta ubicación todavía.</p>
+                    <p>No hay productos guardados aquí aún.</p>
                   </div>
 
-                  <div *ngFor="let it of getItemsInLocation(loc.id)" class="back-item-row">
+                  <!-- Solo los primeros 2 productos que caben en la vista -->
+                  <div *ngFor="let it of getItemsInLocation(loc.id).slice(0, 2)" class="back-item-row">
                     <img [src]="productImageService.getImage(it)" [alt]="it.name" class="back-thumb" />
                     <div class="back-item-meta">
                       <span class="back-item-title" [title]="it.name">{{ it.name }}</span>
                       <span class="back-item-quantity">{{ getStockQtyInLocation(it, loc.id) }} {{ it.unit }}</span>
                     </div>
                   </div>
+
+                  <!-- Botón para ver más en pop-up -->
+                  <button 
+                    *ngIf="getItemsInLocation(loc.id).length > 2" 
+                    type="button" 
+                    class="btn-view-more" 
+                    (click)="openLocationItemsModal(loc, $event)"
+                  >
+                    🔍 Ver más ({{ getItemsInLocation(loc.id).length }} en total)
+                  </button>
+                  <button 
+                    *ngIf="getItemsInLocation(loc.id).length > 0 && getItemsInLocation(loc.id).length <= 2" 
+                    type="button" 
+                    class="btn-view-more subtle" 
+                    (click)="openLocationItemsModal(loc, $event)"
+                  >
+                    🔍 Ver detalle completo
+                  </button>
                 </div>
 
                 <!-- Acciones ordenadas y organizadas -->
@@ -280,6 +299,72 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
             </button>
             <button type="button" class="btn btn-danger" (click)="confirmArchiveLocation()">
               Sí, archivar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pop-up Modal: Todos los elementos registrados en la ubicación -->
+      <div *ngIf="locationForItemsModal()" class="modal-backdrop" (click)="closeLocationItemsModal()">
+        <div class="modal-card card location-items-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-with-icon">
+              <span class="modal-loc-icon">{{ getLocationIcon(locationForItemsModal()!.name) }}</span>
+              <div>
+                <h3>{{ locationForItemsModal()!.name }}</h3>
+                <span class="modal-loc-path">{{ locationForItemsModal()!.fullPath }}</span>
+              </div>
+            </div>
+            <button type="button" class="close-btn" (click)="closeLocationItemsModal()">✕</button>
+          </div>
+
+          <div class="modal-body items-modal-body">
+            <div class="items-modal-meta">
+              <span class="badge-stock-pill" [class.empty]="getItemsInLocation(locationForItemsModal()!.id).length === 0">
+                {{ getItemsInLocation(locationForItemsModal()!.id).length }} {{ getItemsInLocation(locationForItemsModal()!.id).length === 1 ? 'producto registrado' : 'productos registrados' }}
+              </span>
+            </div>
+
+            <!-- Listado completo de productos en el pop-up -->
+            <div class="location-full-items-list custom-scroll">
+              <div *ngIf="getItemsInLocation(locationForItemsModal()!.id).length === 0" class="empty-stock-state">
+                <span class="empty-box-icon">📦</span>
+                <p>No hay productos guardados en esta ubicación todavía.</p>
+              </div>
+
+              <div 
+                *ngFor="let it of getItemsInLocation(locationForItemsModal()!.id)" 
+                class="location-full-item-card"
+              >
+                <img [src]="productImageService.getImage(it)" [alt]="it.name" class="modal-item-thumb" />
+                <div class="modal-item-info">
+                  <div class="modal-item-title-row">
+                    <h4 class="modal-item-name" [title]="it.name">{{ it.name }}</h4>
+                    <span class="modal-category-chip">{{ it.categoryName }}</span>
+                  </div>
+                  <div class="modal-item-details-row">
+                    <span class="modal-stock-badge">
+                      📦 <strong>{{ getStockQtyInLocation(it, locationForItemsModal()!.id) }}</strong> {{ it.unit }}
+                    </span>
+                    <span class="modal-type-chip" [class.consumable]="it.itemType === 'CONSUMABLE'">
+                      {{ it.itemType === 'CONSUMABLE' ? 'Consumible' : 'Duradero' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              (click)="navigateToAddItem(locationForItemsModal()!); closeLocationItemsModal()"
+            >
+              + Añadir objeto aquí
+            </button>
+            <button type="button" class="btn btn-secondary" (click)="closeLocationItemsModal()">
+              Cerrar
             </button>
           </div>
         </div>
@@ -409,7 +494,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
 
     .flip-card {
       background-color: transparent;
-      height: 310px;
+      height: 285px;
       perspective: 1200px;
       cursor: pointer;
 
@@ -435,7 +520,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       border-radius: var(--radius-lg);
-      padding: 1.6rem;
+      padding: 1.35rem 1.4rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -457,10 +542,11 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 0.25rem;
 
         .icon-avatar {
-          width: 48px;
-          height: 48px;
+          width: 44px;
+          height: 44px;
           border-radius: var(--radius-md);
           background: #ffffff;
           border: 1px solid rgba(0, 0, 0, 0.08);
@@ -470,7 +556,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 
           .emoji-icon {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
           }
         }
 
@@ -491,11 +577,12 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
       }
 
       .card-content-front {
-        margin-top: 0.75rem;
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: 0.65rem;
+        margin-top: 0.25rem;
 
         .location-path-crumb {
           font-size: 0.75rem;
@@ -503,7 +590,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          margin-bottom: 0.35rem;
+          margin-bottom: 0.15rem;
 
           .home-prefix {
             font-weight: 500;
@@ -521,32 +608,36 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         }
 
         .location-title {
-          font-size: 1.35rem;
+          font-size: 1.3rem;
           font-weight: 700;
           color: var(--color-text-main);
-          margin-bottom: 0.75rem;
+          margin-bottom: 0;
+          line-height: 1.25;
         }
 
         .preview-products-box {
-          margin-top: auto;
-          padding-top: 0.5rem;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: var(--radius-md);
+          padding: 0.65rem 0.85rem;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
 
           .preview-label {
-            font-size: 0.75rem;
+            font-size: 0.725rem;
             color: var(--color-text-muted);
             font-weight: 600;
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
           }
 
           .thumbnails-preview-row {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.45rem;
 
             .thumb-wrapper {
-              width: 38px;
-              height: 38px;
+              width: 36px;
+              height: 36px;
               border-radius: 8px;
               overflow: hidden;
               background: #ffffff;
@@ -575,10 +666,10 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         }
 
         .empty-location-hint {
-          margin-top: auto;
-          padding: 0.5rem 0.75rem;
-          background: rgba(0, 0, 0, 0.02);
-          border-radius: var(--radius-sm);
+          background: rgba(0, 0, 0, 0.025);
+          border: 1px dashed rgba(0, 0, 0, 0.1);
+          border-radius: var(--radius-md);
+          padding: 0.65rem 0.85rem;
           font-size: 0.8rem;
           color: var(--color-text-muted);
           display: inline-block;
@@ -597,7 +688,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding-bottom: 0.75rem;
+        padding-bottom: 0.6rem;
         border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 
         .back-title-group {
@@ -631,23 +722,21 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         }
       }
 
-      .back-items-scroll {
+      .back-items-container {
         flex: 1;
-        overflow-y: auto;
-        margin: 0.65rem 0;
-        padding-right: 0.25rem;
         display: flex;
         flex-direction: column;
         gap: 0.45rem;
-        max-height: 125px;
+        overflow: hidden;
+        margin: 0.45rem 0;
 
         .empty-stock-state {
           text-align: center;
-          padding: 1.5rem 0.5rem;
+          padding: 1.25rem 0.5rem;
           color: var(--color-text-muted);
 
           .empty-box-icon {
-            font-size: 1.75rem;
+            font-size: 1.6rem;
             display: block;
             margin-bottom: 0.25rem;
             opacity: 0.6;
@@ -663,9 +752,10 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           display: flex;
           align-items: center;
           gap: 0.65rem;
-          padding: 0.35rem 0.5rem;
+          padding: 0.35rem 0.55rem;
           background: var(--color-sand);
           border-radius: var(--radius-sm);
+          border: 1px solid rgba(0, 0, 0, 0.04);
           transition: background 0.15s ease;
 
           &:hover {
@@ -707,25 +797,64 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
             }
           }
         }
+
+        .btn-view-more {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--color-primary);
+          background: var(--color-primary-light);
+          border: 1px dashed rgba(45, 106, 79, 0.35);
+          border-radius: var(--radius-sm);
+          padding: 0.35rem 0.5rem;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: center;
+          margin-top: 0.15rem;
+
+          &:hover {
+            background: #d8f3dc;
+            border-color: var(--color-primary);
+            transform: translateY(-1px);
+          }
+
+          &.subtle {
+            font-size: 0.725rem;
+            background: transparent;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.08);
+            color: var(--color-text-muted);
+
+            &:hover {
+              background: var(--color-primary-light);
+              color: var(--color-primary);
+              border-color: var(--color-primary);
+            }
+          }
+        }
       }
 
       .back-footer-actions {
         margin-top: auto;
-        padding-top: 0.75rem;
+        padding-top: 0.55rem;
         border-top: 1px solid rgba(0, 0, 0, 0.06);
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.4rem;
 
         .btn-add-here {
           width: 100%;
           font-weight: 600;
+          padding: 0.35rem 0.5rem;
           box-shadow: 0 2px 6px rgba(45, 106, 79, 0.15);
         }
 
         .back-secondary-row {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.4rem;
 
           .flex-1 {
             flex: 1;
@@ -783,6 +912,143 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
       gap: 0.75rem;
       margin-top: 1.5rem;
     }
+
+    /* Modal pop-up de todos los elementos de la ubicación */
+    .location-items-modal {
+      max-width: 580px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.75rem;
+
+      .modal-title-with-icon {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+
+        .modal-loc-icon {
+          font-size: 2.2rem;
+        }
+
+        h3 {
+          margin: 0 0 0.15rem 0;
+          font-size: 1.35rem;
+          color: var(--color-text-main);
+        }
+
+        .modal-loc-path {
+          font-size: 0.8rem;
+          color: var(--color-text-muted);
+          font-weight: 500;
+        }
+      }
+
+      .items-modal-body {
+        margin-top: 1rem;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .items-modal-meta {
+        margin-bottom: 0.85rem;
+      }
+
+      .location-full-items-list {
+        max-height: 380px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        padding-right: 0.35rem;
+
+        .location-full-item-card {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+          padding: 0.75rem 0.9rem;
+          border-radius: var(--radius-md);
+          background: #ffffff;
+          border: 1px solid var(--color-border);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+          transition: all 0.15s ease;
+
+          &:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+          }
+
+          .modal-item-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #fafafa;
+            flex-shrink: 0;
+          }
+
+          .modal-item-info {
+            flex: 1;
+            min-width: 0;
+
+            .modal-item-title-row {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 0.5rem;
+              margin-bottom: 0.25rem;
+
+              .modal-item-name {
+                font-size: 0.95rem;
+                font-weight: 700;
+                margin: 0;
+                color: var(--color-text-main);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+
+              .modal-category-chip {
+                font-size: 0.7rem;
+                font-weight: 600;
+                padding: 0.15rem 0.55rem;
+                border-radius: var(--radius-pill);
+                background: var(--color-sand);
+                color: var(--color-text-muted);
+                flex-shrink: 0;
+              }
+            }
+
+            .modal-item-details-row {
+              display: flex;
+              align-items: center;
+              gap: 0.75rem;
+              font-size: 0.8rem;
+
+              .modal-stock-badge {
+                color: var(--color-primary);
+                font-weight: 600;
+              }
+
+              .modal-type-chip {
+                font-size: 0.7rem;
+                padding: 0.1rem 0.45rem;
+                border-radius: 4px;
+                background: rgba(0, 0, 0, 0.04);
+                color: var(--color-text-muted);
+
+                &.consumable {
+                  background: #e0f2fe;
+                  color: #0369a1;
+                  font-weight: 500;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   `]
 })
 export class LocationsComponent {
@@ -800,6 +1066,7 @@ export class LocationsComponent {
   modalName = '';
   modalParentId: number | null = null;
   locationToArchive = signal<Location | null>(null);
+  locationForItemsModal = signal<Location | null>(null);
 
   flippedCardId = signal<number | null>(null);
 
@@ -897,6 +1164,17 @@ export class LocationsComponent {
 
   toggleCardFlip(locId: number) {
     this.flippedCardId.update(curr => curr === locId ? null : locId);
+  }
+
+  openLocationItemsModal(loc: Location, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.locationForItemsModal.set(loc);
+  }
+
+  closeLocationItemsModal() {
+    this.locationForItemsModal.set(null);
   }
 
   navigateToAddItem(loc: Location) {
