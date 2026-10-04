@@ -5,6 +5,7 @@ import { DashboardService } from '../../services/dashboard.service';
 import { InventoryService } from '../../services/inventory.service';
 import { HouseholdService } from '../../services/household.service';
 import { Item } from '../../models/nido.models';
+import { ProductImageService } from '../../services/product-image.service';
 
 @Component({
   selector: 'app-clothing',
@@ -46,12 +47,17 @@ import { Item } from '../../models/nido.models';
           </div>
 
           <div *ngFor="let item of unwornItems()" class="clothing-card card">
-            <div class="clothing-header">
-              <div class="clothing-title">
-                <h3>{{ item.name }}</h3>
-                <div class="badges">
-                  <span *ngIf="item.clothingSize" class="badge badge-primary">Talla: {{ item.clothingSize }}</span>
-                  <span *ngIf="item.clothingColor" class="badge badge-secondary">{{ item.clothingColor }}</span>
+            <div class="clothing-card-top">
+              <div class="clothing-thumbnail-container" [title]="item.name">
+                <img [src]="productImageService.getImage(item)" [alt]="item.name" class="clothing-thumbnail" />
+              </div>
+              <div class="clothing-header">
+                <div class="clothing-title">
+                  <h3>{{ item.name }}</h3>
+                  <div class="badges">
+                    <span *ngIf="item.clothingSize" class="badge badge-primary">Talla: {{ item.clothingSize }}</span>
+                    <span *ngIf="item.clothingColor" class="badge badge-secondary">{{ item.clothingColor }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -135,17 +141,45 @@ import { Item } from '../../models/nido.models';
       justify-content: space-between;
       padding: 1.75rem;
 
-      .clothing-header {
+      .clothing-card-top {
         display: flex;
         gap: 1rem;
         align-items: center;
         margin-bottom: 0.75rem;
 
-        .clothing-icon { font-size: 2rem; }
+        .clothing-thumbnail-container {
+          flex-shrink: 0;
+          width: 52px;
+          height: 52px;
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s ease;
 
-        .clothing-title {
-          h3 { font-size: 1.15rem; margin-bottom: 0.25rem; }
-          .badges { display: flex; gap: 0.35rem; }
+          &:hover {
+            transform: scale(1.08);
+          }
+
+          .clothing-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 2px;
+          }
+        }
+
+        .clothing-header {
+          flex: 1;
+
+          .clothing-title {
+            h3 { font-size: 1.15rem; margin-bottom: 0.25rem; }
+            .badges { display: flex; gap: 0.35rem; }
+          }
         }
       }
 
@@ -208,6 +242,7 @@ export class ClothingComponent {
 
   constructor(
     public householdService: HouseholdService,
+    public productImageService: ProductImageService,
     private dashboardService: DashboardService,
     private inventoryService: InventoryService
   ) {

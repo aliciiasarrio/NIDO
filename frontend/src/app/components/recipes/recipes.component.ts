@@ -4,6 +4,7 @@ import { DashboardService } from '../../services/dashboard.service';
 import { ShoppingListService } from '../../services/shopping-list.service';
 import { HouseholdService } from '../../services/household.service';
 import { RecipeRecommendation } from '../../models/nido.models';
+import { ProductImageService } from '../../services/product-image.service';
 
 @Component({
   selector: 'app-recipes',
@@ -32,14 +33,21 @@ import { RecipeRecommendation } from '../../models/nido.models';
         <div class="recipes-grid">
           <div *ngFor="let rec of recommendations()" class="recipe-card card">
             <div class="recipe-top">
+              <div class="recipe-header-left">
+                <div class="recipe-thumbnail-container" [title]="rec.title">
+                  <img [src]="productImageService.getImage(rec.title, 'Alimentos')" [alt]="rec.title" class="recipe-thumbnail" />
+                </div>
+                <div>
+                  <h3>{{ rec.title }}</h3>
+                  <span class="cook-time">Tiempo: {{ rec.cookingTimeMinutes }} min</span>
+                </div>
+              </div>
               <div class="affinity-badge" [class.high]="rec.matchPercentage >= 75" [class.med]="rec.matchPercentage >= 40 && rec.matchPercentage < 75">
                 {{ rec.matchPercentage }}% disponible
               </div>
             </div>
 
-            <h3>{{ rec.title }}</h3>
             <p class="recipe-desc">{{ rec.description }}</p>
-            <span class="cook-time">Tiempo estimado: {{ rec.cookingTimeMinutes }} min</span>
 
             <div *ngIf="rec.hasExpiringIngredients" class="expiring-alert">
               Contiene ingredientes próximos a caducar. Consumir con prioridad.
@@ -99,27 +107,60 @@ import { RecipeRecommendation } from '../../models/nido.models';
       .recipe-top {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         margin-bottom: 1rem;
+        gap: 0.75rem;
 
-        .recipe-icon { font-size: 2rem; }
+        .recipe-header-left {
+          display: flex;
+          align-items: center;
+          gap: 0.85rem;
+
+          .recipe-thumbnail-container {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+
+            &:hover {
+              transform: scale(1.08);
+            }
+
+            .recipe-thumbnail {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+              padding: 2px;
+            }
+          }
+
+          h3 { font-size: 1.15rem; margin-bottom: 0.2rem; }
+          .cook-time { font-size: 0.825rem; font-weight: 600; color: var(--color-text-muted); }
+        }
 
         .affinity-badge {
-          font-size: 0.825rem;
+          font-size: 0.8rem;
           font-weight: 700;
-          padding: 0.3rem 0.75rem;
+          padding: 0.3rem 0.65rem;
           border-radius: var(--radius-pill);
           background: #ffebee;
           color: #c62828;
+          white-space: nowrap;
 
           &.high { background: #e8f5e9; color: #2e7d32; }
           &.med { background: #fff3e0; color: #ef6c00; }
         }
       }
 
-      h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
       .recipe-desc { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.75rem; }
-      .cook-time { font-size: 0.85rem; font-weight: 600; color: var(--color-text-main); margin-bottom: 1rem; }
 
       .expiring-alert {
         background: var(--color-danger-bg);
@@ -169,7 +210,8 @@ export class RecipesComponent {
   constructor(
     public householdService: HouseholdService,
     private dashboardService: DashboardService,
-    private shoppingService: ShoppingListService
+    private shoppingService: ShoppingListService,
+    public productImageService: ProductImageService
   ) {
     effect(() => {
       const active = this.householdService.activeHousehold();

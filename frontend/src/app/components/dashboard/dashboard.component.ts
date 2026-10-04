@@ -5,6 +5,7 @@ import { DashboardService } from '../../services/dashboard.service';
 import { HouseholdService } from '../../services/household.service';
 import { ShoppingListService } from '../../services/shopping-list.service';
 import { DashboardSummary, Item } from '../../models/nido.models';
+import { ProductImageService } from '../../services/product-image.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -88,6 +89,9 @@ import { DashboardSummary, Item } from '../../models/nido.models';
 
             <div class="alert-list" *ngIf="(summary()?.lowStockItems?.length || 0) > 0">
               <div *ngFor="let item of summary()?.lowStockItems" class="alert-row">
+                <div class="alert-thumbnail-container" [title]="item.name">
+                  <img [src]="productImageService.getImage(item)" [alt]="item.name" class="alert-thumbnail" />
+                </div>
                 <div class="alert-info">
                   <strong>{{ item.name }}</strong>
                   <span class="badge badge-warning">{{ item.categoryName }}</span>
@@ -117,6 +121,9 @@ import { DashboardSummary, Item } from '../../models/nido.models';
 
             <div class="alert-list" *ngIf="(summary()?.expiringSoonStocks?.length || 0) > 0">
               <div *ngFor="let stock of summary()?.expiringSoonStocks" class="alert-row">
+                <div class="alert-thumbnail-container" [title]="stock.itemName || 'Alimento'">
+                  <img [src]="productImageService.getImage(stock.itemName, 'Alimentos')" [alt]="stock.itemName || 'Alimento'" class="alert-thumbnail" />
+                </div>
                 <div class="alert-info">
                   <strong>{{ stock.itemName || 'Alimento perecedero' }}</strong>
                   <div class="stock-text">
@@ -288,13 +295,40 @@ import { DashboardSummary, Item } from '../../models/nido.models';
     .alert-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       padding: 0.75rem 1rem;
       border-radius: var(--radius-md);
       background-color: var(--color-sand);
       border: 1px solid var(--color-border-light);
+      gap: 0.85rem;
+
+      .alert-thumbnail-container {
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease;
+
+        &:hover {
+          transform: scale(1.08);
+        }
+
+        .alert-thumbnail {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          padding: 2px;
+        }
+      }
 
       .alert-info {
+        flex: 1;
         display: flex;
         flex-direction: column;
         gap: 0.2rem;
@@ -313,6 +347,7 @@ export class DashboardComponent {
 
   constructor(
     public householdService: HouseholdService,
+    public productImageService: ProductImageService,
     private dashboardService: DashboardService,
     private shoppingListService: ShoppingListService
   ) {

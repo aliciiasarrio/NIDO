@@ -6,6 +6,7 @@ import { LocationService } from '../../services/location.service';
 import { HouseholdService } from '../../services/household.service';
 import { DashboardService } from '../../services/dashboard.service';
 import { ShoppingEntry, Location, Item } from '../../models/nido.models';
+import { ProductImageService } from '../../services/product-image.service';
 
 @Component({
   selector: 'app-shopping',
@@ -61,7 +62,8 @@ import { ShoppingEntry, Location, Item } from '../../models/nido.models';
                 class="sugg-btn" 
                 (click)="addSuggested(s)"
               >
-                + {{ s.name }} ({{ s.minimumQuantity }} uds.)
+                <img [src]="productImageService.getImage(s)" class="sugg-mini-thumb" [alt]="s.name" />
+                <span>+ {{ s.name }} ({{ s.minimumQuantity }} uds.)</span>
               </button>
             </div>
           </div>
@@ -75,6 +77,9 @@ import { ShoppingEntry, Location, Item } from '../../models/nido.models';
 
           <div *ngFor="let entry of entries()" class="entry-card card" [class.completed]="entry.status === 'COMPLETED'">
             <div class="entry-left">
+              <div class="entry-thumbnail-container" [title]="entry.name">
+                <img [src]="productImageService.getImage(entry.name, 'Alimentos')" [alt]="entry.name" class="entry-thumbnail" />
+              </div>
               <div class="entry-info">
                 <h3>{{ entry.name }}</h3>
                 <span *ngIf="entry.itemName" class="badge badge-primary">Vinculado a inventario</span>
@@ -198,6 +203,9 @@ import { ShoppingEntry, Location, Item } from '../../models/nido.models';
           flex-wrap: wrap;
 
           .sugg-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
             background: var(--color-primary-light);
             color: var(--color-primary);
             border-radius: var(--radius-pill);
@@ -205,6 +213,13 @@ import { ShoppingEntry, Location, Item } from '../../models/nido.models';
             font-size: 0.8rem;
             font-weight: 600;
             border: 1px solid transparent;
+
+            .sugg-mini-thumb {
+              width: 18px;
+              height: 18px;
+              border-radius: 3px;
+              object-fit: contain;
+            }
 
             &:hover {
               background: var(--color-primary);
@@ -237,7 +252,33 @@ import { ShoppingEntry, Location, Item } from '../../models/nido.models';
       .entry-left {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.85rem;
+
+        .entry-thumbnail-container {
+          flex-shrink: 0;
+          width: 42px;
+          height: 42px;
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          background: #ffffff;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s ease;
+
+          &:hover {
+            transform: scale(1.08);
+          }
+
+          .entry-thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 2px;
+          }
+        }
 
         .status-indicator { font-size: 1.2rem; }
 
@@ -311,6 +352,7 @@ export class ShoppingComponent {
 
   constructor(
     public householdService: HouseholdService,
+    public productImageService: ProductImageService,
     private shoppingService: ShoppingListService,
     private locationService: LocationService,
     private dashboardService: DashboardService

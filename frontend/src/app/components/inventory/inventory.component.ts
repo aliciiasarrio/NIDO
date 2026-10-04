@@ -9,6 +9,7 @@ import { CategoryService } from '../../services/category.service';
 import { CatalogService } from '../../services/catalog.service';
 import { Item, Location, ItemRequest, MovementRequest, ItemType, CatalogProduct } from '../../models/nido.models';
 import { Category } from '../../models/category';
+import { ProductImageService } from '../../services/product-image.service';
 
 @Component({
   selector: 'app-inventory',
@@ -93,8 +94,8 @@ import { Category } from '../../models/category';
           <div *ngFor="let item of filteredItems()" class="item-card card">
             <div class="item-card-inner">
               <!-- Item Image / Thumbnail -->
-              <div class="item-thumbnail-container" *ngIf="item.imageData">
-                <img [src]="item.imageData" [alt]="item.name" class="item-thumbnail" />
+              <div class="item-thumbnail-container" [title]="item.name">
+                <img [src]="productImageService.getImage(item)" [alt]="item.name" class="item-thumbnail" />
               </div>
 
               <div class="item-main-content">
@@ -547,17 +548,28 @@ import { Category } from '../../models/category';
 
       .item-thumbnail-container {
         flex-shrink: 0;
-        width: 90px;
-        height: 90px;
+        width: 58px;
+        height: 58px;
         border-radius: var(--radius-md);
         overflow: hidden;
-        border: 1px solid var(--color-border);
-        background: var(--color-sand);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+          transform: scale(1.06);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
 
         .item-thumbnail {
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
+          padding: 3px;
         }
       }
 
@@ -923,6 +935,7 @@ export class InventoryComponent implements OnInit {
 
   constructor(
     public householdService: HouseholdService,
+    public productImageService: ProductImageService,
     private inventoryService: InventoryService,
     private locationService: LocationService,
     private categoryService: CategoryService,
