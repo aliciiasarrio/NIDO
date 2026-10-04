@@ -25,7 +25,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         <header class="page-header">
           <div>
             <h1>Ubicaciones del Hogar</h1>
-            <p class="subtitle">Organiza los espacios de almacenamiento en 3D: sitúa el cursor sobre cualquier tarjeta para ver su contenido</p>
+            <p class="subtitle">Espacios y zonas de almacenamiento</p>
           </div>
           <button class="btn btn-primary btn-create-location" (click)="openCreateModal()">
             <span>+</span> Nueva Ubicación
@@ -47,7 +47,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
               <input 
                 type="text" 
                 [(ngModel)]="searchQuery" 
-                placeholder="Buscar por nombre o ruta (ej. Despensa, Mueble alto...)" 
+                placeholder="Buscar ubicación..." 
                 class="form-control"
               />
             </div>
@@ -150,8 +150,11 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                 </div>
 
                 <div class="card-footer-front">
-                  <span class="flip-callout">
-                    <span class="flip-rotate-icon">🔄</span> Pasa el ratón para ver existencias y acciones
+                  <span class="stock-summary-text" *ngIf="getItemsInLocation(loc.id).length > 0">
+                    {{ getItemsInLocation(loc.id).length }} {{ getItemsInLocation(loc.id).length === 1 ? 'artículo en existencias' : 'artículos en existencias' }}
+                  </span>
+                  <span class="stock-summary-text empty" *ngIf="getItemsInLocation(loc.id).length === 0">
+                    Sin existencias registradas
                   </span>
                 </div>
               </div>
@@ -589,17 +592,14 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         padding-top: 0.75rem;
         border-top: 1px solid rgba(0, 0, 0, 0.05);
 
-        .flip-callout {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
+        .stock-summary-text {
           font-size: 0.775rem;
           font-weight: 600;
           color: var(--color-primary);
 
-          .flip-rotate-icon {
-            display: inline-block;
-            transition: transform 0.3s ease;
+          &.empty {
+            color: var(--color-text-muted);
+            font-weight: 500;
           }
         }
       }
