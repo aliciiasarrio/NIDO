@@ -148,15 +148,6 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                     <span>Espacio vacío disponible</span>
                   </div>
                 </div>
-
-                <div class="card-footer-front">
-                  <span class="stock-summary-text" *ngIf="getItemsInLocation(loc.id).length > 0">
-                    {{ getItemsInLocation(loc.id).length }} {{ getItemsInLocation(loc.id).length === 1 ? 'artículo en existencias' : 'artículos en existencias' }}
-                  </span>
-                  <span class="stock-summary-text empty" *ngIf="getItemsInLocation(loc.id).length === 0">
-                    Sin existencias registradas
-                  </span>
-                </div>
               </div>
 
               <!-- CARA TRASERA (BACK FACE: Al situar el ratón encima) -->
@@ -169,7 +160,6 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                       <span class="back-subpath">{{ loc.fullPath }}</span>
                     </div>
                   </div>
-                  <span class="back-badge">{{ getItemsInLocation(loc.id).length }} ítems</span>
                 </div>
 
                 <!-- Lista con scroll de productos -->
@@ -502,6 +492,10 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
 
       .card-content-front {
         margin-top: 0.75rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
 
         .location-path-crumb {
           font-size: 0.75rem;
@@ -534,6 +528,9 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         }
 
         .preview-products-box {
+          margin-top: auto;
+          padding-top: 0.5rem;
+
           .preview-label {
             font-size: 0.75rem;
             color: var(--color-text-muted);
@@ -578,29 +575,13 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         }
 
         .empty-location-hint {
+          margin-top: auto;
           padding: 0.5rem 0.75rem;
           background: rgba(0, 0, 0, 0.02);
           border-radius: var(--radius-sm);
           font-size: 0.8rem;
           color: var(--color-text-muted);
           display: inline-block;
-        }
-      }
-
-      .card-footer-front {
-        margin-top: auto;
-        padding-top: 0.75rem;
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
-
-        .stock-summary-text {
-          font-size: 0.775rem;
-          font-weight: 600;
-          color: var(--color-primary);
-
-          &.empty {
-            color: var(--color-text-muted);
-            font-weight: 500;
-          }
         }
       }
     }
@@ -647,16 +628,6 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
             overflow: hidden;
             text-overflow: ellipsis;
           }
-        }
-
-        .back-badge {
-          font-size: 0.725rem;
-          font-weight: 700;
-          color: var(--color-primary);
-          background: var(--color-primary-light);
-          padding: 0.2rem 0.5rem;
-          border-radius: var(--radius-pill);
-          white-space: nowrap;
         }
       }
 
