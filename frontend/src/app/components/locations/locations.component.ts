@@ -115,74 +115,104 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
             *ngFor="let loc of filteredLocations()" 
             class="flip-card"
             [class.is-flipped]="flippedCardId() === loc.id"
-            (click)="toggleCardFlip(loc.id)"
+            (click)="onCardClick(loc.id, $event)"
           >
             <div class="flip-card-inner">
               
               <!-- CARA FRONTAL (FRONT FACE) -->
               <div class="flip-card-face flip-card-front card">
                 <div class="card-header-front">
-                  <div class="icon-avatar">
-                    <ng-container [ngSwitch]="getLocationType(loc.name)">
-                      <svg *ngSwitchCase="'kitchen'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
-                      <svg *ngSwitchCase="'cold'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="5" y1="10" x2="19" y2="10"></line><line x1="9" y1="6" x2="9" y2="8"></line><line x1="9" y1="14" x2="9" y2="17"></line></svg>
-                      <svg *ngSwitchCase="'storage'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                      <svg *ngSwitchCase="'wardrobe'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="12" y1="2" x2="12" y2="22"></line><line x1="9" y1="10" x2="9" y2="12"></line><line x1="15" y1="10" x2="15" y2="12"></line></svg>
-                      <svg *ngSwitchCase="'bedroom'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
-                      <svg *ngSwitchCase="'bathroom'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h6a3 3 0 0 1 3 3v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a3 3 0 0 1 3-3z"></path><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3z"></path><line x1="6" y1="19" x2="6" y2="22"></line><line x1="18" y1="19" x2="18" y2="22"></line></svg>
-                      <svg *ngSwitchCase="'living'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"></path><path d="M2 11a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7z"></path><path d="M4 18v2"></path><path d="M20 18v2"></path></svg>
-                      <svg *ngSwitchDefault class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    </ng-container>
+                  <div class="avatar-title-group">
+                    <div class="icon-avatar">
+                      <ng-container [ngSwitch]="getLocationType(loc.name)">
+                        <svg *ngSwitchCase="'kitchen'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
+                        <svg *ngSwitchCase="'cold'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="5" y1="10" x2="19" y2="10"></line><line x1="9" y1="6" x2="9" y2="8"></line><line x1="9" y1="14" x2="9" y2="17"></line></svg>
+                        <svg *ngSwitchCase="'storage'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        <svg *ngSwitchCase="'wardrobe'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="12" y1="2" x2="12" y2="22"></line><line x1="9" y1="10" x2="9" y2="12"></line><line x1="15" y1="10" x2="15" y2="12"></line></svg>
+                        <svg *ngSwitchCase="'bedroom'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"></path><path d="M2 8h18a2 2 0 0 1 2 2v10"></path><path d="M2 17h20"></path><path d="M6 8v9"></path></svg>
+                        <svg *ngSwitchCase="'bathroom'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h6a3 3 0 0 1 3 3v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9a3 3 0 0 1 3-3z"></path><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3z"></path><line x1="6" y1="19" x2="6" y2="22"></line><line x1="18" y1="19" x2="18" y2="22"></line></svg>
+                        <svg *ngSwitchCase="'living'" class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3"></path><path d="M2 11a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-7z"></path><path d="M4 18v2"></path><path d="M20 18v2"></path></svg>
+                        <svg *ngSwitchDefault class="loc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                      </ng-container>
+                    </div>
+                    <div class="name-subpath-wrap">
+                      <div class="location-path-crumb" [title]="loc.fullPath">
+                        <span class="home-prefix">{{ householdService.activeHousehold()?.name }}</span>
+                        <span class="crumb-slash">/</span>
+                        <span class="path-text">{{ loc.fullPath }}</span>
+                      </div>
+                      <h3 class="location-title">{{ loc.name }}</h3>
+                    </div>
                   </div>
-                  <div 
-                    class="badge-stock-pill" 
-                    [class.empty]="getItemsInLocation(loc.id).length === 0"
-                  >
-                    {{ getItemsInLocation(loc.id).length }} {{ getItemsInLocation(loc.id).length === 1 ? 'artículo' : 'artículos' }}
+
+                  <div class="header-right-badges">
+                    <div 
+                      class="badge-stock-pill" 
+                      [class.empty]="getItemsInLocation(loc.id).length === 0"
+                    >
+                      {{ getItemsInLocation(loc.id).length }} {{ getItemsInLocation(loc.id).length === 1 ? 'artículo' : 'artículos' }}
+                    </div>
+                    <button 
+                      type="button" 
+                      class="btn-card-flip-toggle" 
+                      (click)="toggleCardFlip(loc.id, $event)"
+                      title="Girar tarjeta para ver acciones (añadir, editar, archivar)"
+                    >
+                      <svg class="svg-flip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                      </svg>
+                      <span>Girar</span>
+                    </button>
                   </div>
                 </div>
 
                 <div class="card-content-front">
-                  <div class="location-path-crumb" [title]="loc.fullPath">
-                    <span class="home-prefix">{{ householdService.activeHousehold()?.name }}</span>
-                    <span class="crumb-slash">/</span>
-                    <span class="path-text">{{ loc.fullPath }}</span>
-                  </div>
-
-                  <h3 class="location-title">{{ loc.name }}</h3>
-
-                  <!-- Contenedor de artículos con botón explícito para ver todos -->
+                  <!-- Contenedor de artículos frontal -->
                   <div class="preview-products-box" *ngIf="getItemsInLocation(loc.id).length > 0">
-                    <div class="preview-header-row">
-                      <span class="preview-label">Artículos almacenados</span>
-                      <button 
-                        type="button" 
-                        class="btn-expand-trigger" 
+                    <div class="front-items-preview-list">
+                      <div 
+                        *ngFor="let it of getItemsInLocation(loc.id).slice(0, 2)" 
+                        class="front-preview-row"
                         (click)="openLocationItemsModal(loc, $event)"
-                        title="Ver todos los artículos en esta ubicación"
                       >
-                        <span>Ver todos ({{ getItemsInLocation(loc.id).length }})</span>
-                        <svg class="svg-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                      </button>
+                        <img [src]="productImageService.getImage(it)" [alt]="it.name" class="front-thumb" />
+                        <div class="front-preview-meta">
+                          <span class="front-item-name" [title]="it.name">{{ it.name }}</span>
+                          <span class="front-item-qty">{{ getStockQtyInLocation(it, loc.id) }} {{ it.unit }}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div class="thumbnails-preview-row" (click)="openLocationItemsModal(loc, $event)" title="Haz clic para ver todos los artículos">
-                      <div 
-                        *ngFor="let it of getItemsInLocation(loc.id).slice(0, 4)" 
-                        class="thumb-wrapper" 
-                        [title]="it.name + ' (' + getStockQtyInLocation(it, loc.id) + ' ' + it.unit + ')'"
-                      >
-                        <img [src]="productImageService.getImage(it)" [alt]="it.name" class="mini-thumb" />
-                      </div>
-                      <span *ngIf="getItemsInLocation(loc.id).length > 4" class="more-badge">
-                        +{{ getItemsInLocation(loc.id).length - 4 }} más
-                      </span>
-                    </div>
+                    <!-- BOTÓN VER MÁS / VER TODOS LOS ARTÍCULOS QUE ABRE EL POP-UP DIRECTAMENTE -->
+                    <button 
+                      type="button" 
+                      class="btn-view-all-modal" 
+                      (click)="openLocationItemsModal(loc, $event)"
+                      title="Ver todos los artículos registrados en esta ubicación"
+                    >
+                      <svg class="svg-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <span>Ver todos los artículos ({{ getItemsInLocation(loc.id).length }})</span>
+                      <svg class="svg-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                      </svg>
+                    </button>
                   </div>
 
                   <div class="empty-location-hint" *ngIf="getItemsInLocation(loc.id).length === 0">
-                    <svg class="svg-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                    <span>Espacio disponible sin existencias</span>
+                    <div class="empty-hint-text">
+                      <svg class="svg-hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                      <span>Espacio disponible sin existencias</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      class="btn btn-sm btn-outline-primary btn-add-empty"
+                      (click)="$event.stopPropagation(); navigateToAddItem(loc)"
+                    >
+                      + Añadir producto
+                    </button>
                   </div>
                 </div>
               </div>
@@ -208,9 +238,20 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                       <span class="back-subpath">{{ loc.fullPath }}</span>
                     </div>
                   </div>
+                  <button 
+                    type="button" 
+                    class="btn-card-flip-toggle btn-card-flip-back" 
+                    (click)="toggleCardFlip(loc.id, $event)"
+                    title="Volver a la vista principal"
+                  >
+                    <svg class="svg-flip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                    </svg>
+                    <span>Volver</span>
+                  </button>
                 </div>
 
-                <!-- Lista fija de productos (MÁXIMO 2 productos, SIN SCROLL) -->
+                <!-- Lista fija de productos trasera (MÁXIMO 2 productos, SIN SCROLL) -->
                 <div class="back-items-container">
                   <div *ngIf="getItemsInLocation(loc.id).length === 0" class="empty-stock-state">
                     <svg class="empty-box-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
@@ -226,7 +267,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                     </div>
                   </div>
 
-                  <!-- Botón SIEMPRE presente si hay productos para ampliar y ver la lista completa -->
+                  <!-- Botón SIEMPRE presente si hay productos para ampliar y ver la lista completa en modal -->
                   <button 
                     *ngIf="getItemsInLocation(loc.id).length > 0" 
                     type="button" 
@@ -234,7 +275,10 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
                     (click)="openLocationItemsModal(loc, $event)"
                     title="Ampliar y ver listado completo"
                   >
-                    <svg class="svg-icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
+                    <svg class="svg-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
                     Ver todos los artículos ({{ getItemsInLocation(loc.id).length }})
                   </button>
                 </div>
@@ -584,14 +628,9 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
 
     .flip-card {
       background-color: transparent;
-      height: 285px;
+      height: 305px;
       perspective: 1200px;
-      cursor: pointer;
-
-      &:hover .flip-card-inner,
-      &.is-flipped .flip-card-inner {
-        transform: rotateY(180deg);
-      }
+      position: relative;
     }
 
     .flip-card-inner {
@@ -599,8 +638,13 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
       width: 100%;
       height: 100%;
       text-align: left;
-      transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
       transform-style: preserve-3d;
+    }
+
+    /* Voltear SOLAMENTE con la clase .is-flipped controlada, nunca por hover */
+    .flip-card.is-flipped .flip-card-inner {
+      transform: rotateY(180deg);
     }
 
     .flip-card-face {
@@ -610,7 +654,7 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
       -webkit-backface-visibility: hidden;
       backface-visibility: hidden;
       border-radius: var(--radius-lg);
-      padding: 1.35rem 1.4rem;
+      padding: 1.25rem 1.35rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -619,53 +663,111 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
       transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     }
 
-    /* Front Face */
+    /* Cara Frontal */
     .flip-card-front {
       background: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
+      transform: rotateY(0deg);
+      z-index: 2;
+      pointer-events: auto;
 
       &:hover {
-        border-color: #94a3b8;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+        border-color: #cbd5e1;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
       }
 
       .card-header-front {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.25rem;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.4rem;
 
-        .icon-avatar {
-          width: 40px;
-          height: 40px;
-          border-radius: 8px;
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
+        .avatar-title-group {
           display: flex;
           align-items: center;
-          justify-content: center;
-          color: #475569;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+          gap: 0.65rem;
+          min-width: 0;
+          flex: 1;
 
-          .loc-svg {
-            width: 20px;
-            height: 20px;
+          .icon-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #475569;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            flex-shrink: 0;
+
+            .loc-svg {
+              width: 19px;
+              height: 19px;
+              color: #475569;
+            }
+          }
+
+          .name-subpath-wrap {
+            min-width: 0;
+
+            .location-path-crumb {
+              font-size: 0.7rem;
+              color: #64748b;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              margin-bottom: 0.1rem;
+
+              .home-prefix {
+                font-weight: 500;
+              }
+
+              .crumb-slash {
+                margin: 0 0.25rem;
+                opacity: 0.4;
+              }
+
+              .path-text {
+                font-weight: 600;
+                color: var(--color-primary);
+              }
+            }
+
+            .location-title {
+              font-size: 1.15rem;
+              font-weight: 700;
+              color: #0f172a;
+              margin: 0;
+              line-height: 1.2;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
           }
         }
 
-        .badge-stock-pill {
-          font-size: 0.75rem;
-          font-weight: 600;
-          padding: 0.3rem 0.65rem;
-          border-radius: var(--radius-pill);
-          background: #f0fdf4;
-          color: #166534;
-          border: 1px solid #bbf7d0;
+        .header-right-badges {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+          flex-shrink: 0;
 
-          &.empty {
-            background: #f8fafc;
-            color: #64748b;
-            border-color: #e2e8f0;
+          .badge-stock-pill {
+            font-size: 0.725rem;
+            font-weight: 600;
+            padding: 0.25rem 0.55rem;
+            border-radius: var(--radius-pill);
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+
+            &.empty {
+              background: #f8fafc;
+              color: #64748b;
+              border-color: #e2e8f0;
+            }
           }
         }
       }
@@ -674,129 +776,115 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
-        gap: 0.65rem;
-        margin-top: 0.25rem;
-
-        .location-path-crumb {
-          font-size: 0.725rem;
-          color: #64748b;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          margin-bottom: 0.15rem;
-
-          .home-prefix {
-            font-weight: 500;
-          }
-
-          .crumb-slash {
-            margin: 0 0.3rem;
-            opacity: 0.4;
-          }
-
-          .path-text {
-            font-weight: 600;
-            color: var(--color-primary);
-          }
-        }
-
-        .location-title {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #0f172a;
-          margin-bottom: 0;
-          line-height: 1.25;
-        }
+        justify-content: space-between;
+        margin-top: 0.35rem;
 
         .preview-products-box {
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: var(--radius-md);
-          padding: 0.75rem 0.85rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+          padding: 0.65rem 0.75rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+          display: flex;
+          flex-direction: column;
+          gap: 0.45rem;
 
-          .preview-header-row {
+          .front-items-preview-list {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.45rem;
+            flex-direction: column;
+            gap: 0.4rem;
 
-            .preview-label {
-              font-size: 0.7rem;
-              color: #64748b;
-              font-weight: 600;
-              text-transform: uppercase;
-              letter-spacing: 0.03em;
-            }
-
-            .btn-expand-trigger {
-              background: transparent;
-              border: none;
-              padding: 0;
-              color: var(--color-primary);
-              font-size: 0.75rem;
-              font-weight: 600;
-              cursor: pointer;
-              display: inline-flex;
+            .front-preview-row {
+              display: flex;
               align-items: center;
-              gap: 0.25rem;
+              gap: 0.55rem;
+              padding: 0.3rem 0.5rem;
+              background: #f8fafc;
+              border-radius: var(--radius-sm);
+              border: 1px solid #e2e8f0;
+              cursor: pointer;
               transition: all 0.15s ease;
 
               &:hover {
-                color: #14532d;
-                text-decoration: underline;
-
-                .svg-chevron {
-                  transform: translateX(2px);
-                }
+                background: #f1f5f9;
+                border-color: #cbd5e1;
               }
 
-              .svg-chevron {
-                width: 12px;
-                height: 12px;
-                transition: transform 0.15s ease;
+              .front-thumb {
+                width: 28px;
+                height: 28px;
+                border-radius: 5px;
+                object-fit: cover;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                flex-shrink: 0;
+              }
+
+              .front-preview-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex: 1;
+                min-width: 0;
+
+                .front-item-name {
+                  font-size: 0.785rem;
+                  font-weight: 600;
+                  color: #0f172a;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  padding-right: 0.5rem;
+                }
+
+                .front-item-qty {
+                  font-size: 0.75rem;
+                  font-weight: 700;
+                  color: var(--color-primary);
+                  white-space: nowrap;
+                }
               }
             }
           }
 
-          .thumbnails-preview-row {
+          .btn-view-all-modal {
+            width: 100%;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.45rem;
+            background: #f0fdf4;
+            border: 1.5px solid #86efac;
+            color: #166534;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-md);
             cursor: pointer;
+            transition: all 0.18s ease;
+            margin-top: 0.15rem;
 
             &:hover {
-              opacity: 0.88;
-            }
+              background: #dcfce7;
+              border-color: #4ade80;
+              color: #14532d;
+              transform: translateY(-1px);
+              box-shadow: 0 3px 8px rgba(34, 197, 94, 0.18);
 
-            .thumb-wrapper {
-              width: 36px;
-              height: 36px;
-              border-radius: 6px;
-              overflow: hidden;
-              background: #ffffff;
-              border: 1px solid #e2e8f0;
-              box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-
-              .mini-thumb {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
+              .svg-chevron {
+                transform: translateX(2px);
               }
             }
 
-            .more-badge {
-              font-size: 0.725rem;
-              font-weight: 600;
-              color: #334155;
-              background: #f1f5f9;
-              border: 1px solid #e2e8f0;
-              padding: 0.2rem 0.5rem;
-              border-radius: var(--radius-pill);
+            .svg-eye {
+              width: 15px;
+              height: 15px;
+            }
+
+            .svg-chevron {
+              width: 13px;
+              height: 13px;
+              transition: transform 0.15s ease;
             }
           }
         }
@@ -805,29 +893,84 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           background: #f8fafc;
           border: 1px dashed #cbd5e1;
           border-radius: var(--radius-md);
-          padding: 0.75rem 0.85rem;
-          font-size: 0.8rem;
-          color: #64748b;
+          padding: 1.25rem 1rem;
           display: flex;
+          flex-direction: column;
           align-items: center;
-          gap: 0.5rem;
+          justify-content: center;
+          gap: 0.6rem;
+          text-align: center;
 
-          .svg-hint-icon {
-            width: 16px;
-            height: 16px;
-            color: #94a3b8;
-            flex-shrink: 0;
+          .empty-hint-text {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.825rem;
+            color: #64748b;
+
+            .svg-hint-icon {
+              width: 16px;
+              height: 16px;
+              color: #94a3b8;
+              flex-shrink: 0;
+            }
+          }
+
+          .btn-add-empty {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.35rem 0.75rem;
           }
         }
       }
     }
 
-    /* Back Face */
+    /* Botón de girar tarjeta */
+    .btn-card-flip-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: var(--radius-pill);
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 0.725rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+        transform: translateY(-1px);
+      }
+
+      .svg-flip-icon {
+        width: 12px;
+        height: 12px;
+      }
+    }
+
+    .btn-card-flip-back {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+
+      &:hover {
+        background: #dcfce7;
+        color: #14532d;
+      }
+    }
+
+    /* Cara Trasera */
     .flip-card-back {
       background: #ffffff;
       transform: rotateY(180deg);
       border-color: var(--color-primary);
-      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      z-index: 1;
+      pointer-events: none;
 
       .back-header {
         display: flex;
@@ -1029,6 +1172,17 @@ import { Location, LocationRequest, Item } from '../../models/nido.models';
           }
         }
       }
+    }
+
+    /* Reglas estrictas para el estado volteado */
+    .flip-card.is-flipped .flip-card-front {
+      pointer-events: none !important;
+      z-index: 1;
+    }
+
+    .flip-card.is-flipped .flip-card-back {
+      pointer-events: auto !important;
+      z-index: 3;
     }
 
     .empty-card {
@@ -1412,13 +1566,26 @@ export class LocationsComponent {
     return 'room';
   }
 
-  toggleCardFlip(locId: number) {
+  onCardClick(locId: number, event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, input, select, .btn-expand-trigger, .btn-expand-full-view, .btn-view-all-modal, .front-preview-row, .modal-backdrop')) {
+      return;
+    }
+    this.toggleCardFlip(locId, event);
+  }
+
+  toggleCardFlip(locId: number, event?: Event) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
     this.flippedCardId.update(curr => curr === locId ? null : locId);
   }
 
   openLocationItemsModal(loc: Location, event?: Event) {
     if (event) {
       event.stopPropagation();
+      event.preventDefault();
     }
     this.locationForItemsModal.set(loc);
   }
