@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface InventoryMovementRepository extends JpaRepository<InventoryMovement, Long> {
     List<InventoryMovement> findByItemIdOrderByCreatedAtDesc(Long itemId);
+    void deleteByItemId(Long itemId);
 }

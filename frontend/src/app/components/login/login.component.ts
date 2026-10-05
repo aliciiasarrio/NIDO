@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
       <div class="auth-card card">
         <div class="auth-header">
           <div class="auth-logo">
+            <img src="favicon.svg" alt="NIDO Logo" class="auth-logo-img" width="48" height="48">
             <h2>NIDO</h2>
           </div>
           <p class="subtitle">Bienvenido de nuevo a tu hogar organizado</p>
@@ -103,14 +104,18 @@ import { AuthService } from '../../services/auth.service';
     .auth-logo {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.75rem;
       font-size: 1.8rem;
       font-weight: 800;
       color: var(--color-primary);
       margin-bottom: 0.5rem;
 
-      .icon {
-        font-size: 2rem;
+      .auth-logo-img {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(27, 67, 50, 0.25);
+        display: block;
       }
     }
 

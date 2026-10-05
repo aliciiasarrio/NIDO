@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="nido-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1B4332"/>
+      <stop offset="100%" stop-color="#081C15"/>
+    </linearGradient>
+    <linearGradient id="nido-roof" x1="12" y1="12" x2="52" y2="33" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#74C69D"/>
+      <stop offset="100%" stop-color="#40916C"/>
+    </linearGradient>
+    <linearGradient id="nido-gold" x1="20" y1="26" x2="44" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF3B0"/>
+      <stop offset="50%" stop-color="#E09F3E"/>
+      <stop offset="100%" stop-color="#9E2A2B"/>
+    </linearGradient>
+    <linearGradient id="nido-amber" x1="24" y1="26" x2="40" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE6A7"/>
+      <stop offset="100%" stop-color="#D4A373"/>
+    </linearGradient>
+    <filter id="nido-shadow" x="8" y="8" width="48" height="48" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Modern Squircle Base -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#nido-bg)"/>
+  <rect x="2.75" y="2.75" width="58.5" height="58.5" rx="15.25" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.5"/>
+
+  <!-- Architectural Roof Shelter -->
+  <path d="M32 12L12 28L16.5 32.5L32 20L47.5 32.5L52 28L32 12Z" fill="url(#nido-roof)" filter="url(#nido-shadow)"/>
+
+  <!-- Golden Nest Cradle -->
+  <path d="M17 35C17 46 23.5 52 32 52C40.5 52 47 46 47 35" stroke="#FAEDCD" stroke-width="3" stroke-linecap="round"/>
+  <path d="M22 39.5C24.5 44.5 28 46.5 32 46.5C36 46.5 39.5 44.5 42 39.5" stroke="#D4A373" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Hearth / Warm Sanctuary Core -->
+  <ellipse cx="32" cy="34.5" rx="6.5" ry="8" fill="url(#nido-amber)" filter="url(#nido-shadow)"/>
+  <path d="M29.5 30.5C30.5 28.5 32 28 34 28.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-opacity="0.9"/>
+</svg>

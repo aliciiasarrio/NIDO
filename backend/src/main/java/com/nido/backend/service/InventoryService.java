@@ -10,6 +10,7 @@ import com.nido.backend.entity.Household;
 import com.nido.backend.entity.InventoryMovement;
 import com.nido.backend.entity.Item;
 import com.nido.backend.entity.Location;
+import com.nido.backend.entity.ShoppingListEntry;
 import com.nido.backend.entity.Stock;
 import com.nido.backend.repository.CategoryRepository;
 import com.nido.backend.repository.HouseholdRepository;
@@ -17,6 +18,7 @@ import com.nido.backend.repository.InventoryMovementRepository;
 import com.nido.backend.repository.ItemRepository;
 import com.nido.backend.repository.LocationRepository;
 import com.nido.backend.repository.StockRepository;
+import com.nido.backend.repository.ShoppingListEntryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +36,7 @@ public class InventoryService {
     private final HouseholdRepository householdRepository;
     private final HouseholdService householdService;
     private final LocationService locationService;
+    private final ShoppingListEntryRepository shoppingListEntryRepository;
 
     public InventoryService(ItemRepository itemRepository,
                             StockRepository stockRepository,
@@ -42,7 +45,8 @@ public class InventoryService {
                             CategoryRepository categoryRepository,
                             HouseholdRepository householdRepository,
                             HouseholdService householdService,
-                            LocationService locationService) {
+                            LocationService locationService,
+                            ShoppingListEntryRepository shoppingListEntryRepository) {
         this.itemRepository = itemRepository;
         this.stockRepository = stockRepository;
         this.movementRepository = movementRepository;
@@ -51,6 +55,7 @@ public class InventoryService {
         this.householdRepository = householdRepository;
         this.householdService = householdService;
         this.locationService = locationService;
+        this.shoppingListEntryRepository = shoppingListEntryRepository;
     }
 
     @Transactional(readOnly = true)
@@ -172,6 +177,12 @@ public class InventoryService {
             throw new IllegalArgumentException("El producto no pertenece al hogar");
         }
 
+        // Desvincular de entradas en la lista de compra para evitar que compras posteriores den error
+        List<ShoppingListEntry> shoppingEntries = shoppingListEntryRepository.findByItemId(itemId);
+        for (ShoppingListEntry entry : shoppingEntries) {
+            entry.setItem(null);
+        }
+
         // Si tiene stock restante, registramos las salidas automáticas por retirada
         List<Stock> stocks = stockRepository.findByItemId(itemId);
         for (Stock st : stocks) {
@@ -190,6 +201,33 @@ public class InventoryService {
         }
 
         item.setArchivedAt(Instant.now());
+    }
+
+    @Transactional
+    public void deleteItem(Long householdId, Long itemId, String userEmail) {
+        householdService.assertUserIsMember(householdId, userEmail);
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado"));
+
+        if (!item.getHousehold().getId().equals(householdId)) {
+            throw new IllegalArgumentException("El producto no pertenece al hogar");
+        }
+
+        // 1. Desvincular de entradas en lista de compra para conservar el registro sin romper la integridad
+        List<ShoppingListEntry> shoppingEntries = shoppingListEntryRepository.findByItemId(itemId);
+        for (ShoppingListEntry entry : shoppingEntries) {
+            entry.setItem(null);
+        }
+
+        // 2. Eliminar movimientos de inventario asociados
+        movementRepository.deleteByItemId(itemId);
+
+        // 3. Eliminar existencias asociadas
+        stockRepository.deleteByItemId(itemId);
+
+        // 4. Eliminar el producto definitivamente
+        itemRepository.delete(item);
     }
 
     @Transactional

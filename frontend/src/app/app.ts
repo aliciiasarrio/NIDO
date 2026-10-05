@@ -16,7 +16,8 @@ import { Household } from './models/nido.models';
       <header *ngIf="authService.currentUser()" class="navbar">
         <div class="nav-container">
           <div class="nav-brand">
-            <a routerLink="/" class="brand-link">
+            <a routerLink="/" class="brand-link" title="NIDO - Inicio">
+              <img src="favicon.svg" alt="NIDO Logo" class="brand-logo" width="32" height="32">
               <span class="brand-title">NIDO</span>
             </a>
 
@@ -191,15 +192,35 @@ import { Household } from './models/nido.models';
     .brand-link {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.65rem;
       font-family: var(--font-display);
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       color: var(--color-primary);
       text-decoration: none;
+      transition: transform var(--transition-fast), opacity var(--transition-fast);
 
-      .brand-icon {
-        font-size: 1.6rem;
+      &:hover {
+        opacity: 0.92;
+        transform: translateY(-1px);
+      }
+
+      .brand-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        box-shadow: 0 2px 8px rgba(27, 67, 50, 0.2);
+        display: block;
+        transition: transform 0.2s ease;
+      }
+
+      &:hover .brand-logo {
+        transform: scale(1.05);
+      }
+
+      .brand-title {
+        letter-spacing: -0.01em;
+        font-weight: 800;
       }
     }
 

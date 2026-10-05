@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long> {
     List<Stock> findByItemId(Long itemId);
+    void deleteByItemId(Long itemId);
     List<Stock> findByLocationId(Long locationId);
     Optional<Stock> findByItemIdAndLocationId(Long itemId, Long locationId);
     boolean existsByLocationIdAndQuantityGreaterThan(Long locationId, Integer quantity);
