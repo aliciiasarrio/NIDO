@@ -156,7 +156,22 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        this.errorMessage.set(err.error?.error || 'Error al iniciar sesión. Revisa tus credenciales.');
+        // Distinguish network errors from credential errors
+        if (err.status === 0 || err.name === 'HttpErrorResponse' && !err.status) {
+          this.errorMessage.set('No se puede conectar con el servidor. Asegúrate de que el backend está arrancado (puerto 8080).');
+        } else if (err.status === 401) {
+          this.errorMessage.set('Correo o contraseña incorrectos. Revisa tus datos e inténtalo de nuevo.');
+        } else if (err.status === 400) {
+          const fieldErrors = err.error;
+          if (typeof fieldErrors === 'object') {
+            const messages = Object.values(fieldErrors).join(' ');
+            this.errorMessage.set(messages || 'Datos inválidos. Revisa los campos.');
+          } else {
+            this.errorMessage.set(err.error?.error || 'Datos de login inválidos.');
+          }
+        } else {
+          this.errorMessage.set(err.error?.error || 'Error al iniciar sesión. Inténtalo de nuevo.');
+        }
       }
     });
   }
