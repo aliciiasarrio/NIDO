@@ -87,6 +87,7 @@ import { GeminiService, ChatMessage } from '../../services/gemini.service';
         <p class="settings-saved" *ngIf="keySaved()">✅ API key guardada y actualizada</p>
         <p class="settings-current" *ngIf="geminiService.hasApiKey() && !keySaved()" style="margin: 0.35rem 0 0; font-size: 0.8rem; color: #059669;">
           🔒 Clave activa: ••••••••{{ geminiService.getApiKey().slice(-4) }}
+          <span *ngIf="geminiService.activeModel()" style="color: #4f46e5; margin-left: 0.5rem; font-weight: 500;">({{ geminiService.activeModel() }})</span>
         </p>
       </div>
 
@@ -162,7 +163,7 @@ import { GeminiService, ChatMessage } from '../../services/gemini.service';
             </svg>
           </button>
         </div>
-        <p class="powered-by">Powered by <strong>Gemini 2.0 Flash</strong> · Google AI</p>
+        <p class="powered-by">Powered by <strong>Gemini AI ({{ geminiService.activeModel() || 'Auto' }})</strong> · Google AI</p>
       </div>
     </div>
 

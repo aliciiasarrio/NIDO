@@ -1,7 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, from, throwError } from 'rxjs';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -35,8 +33,6 @@ Si el usuario pregunta sobre algo no relacionado con el hogar, redirige amableme
 
 @Injectable({ providedIn: 'root' })
 export class GeminiService {
-  private readonly PRIMARY_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-  private readonly FALLBACK_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   private _apiKey = '';
 
   messages = signal<ChatMessage[]>([
@@ -49,13 +45,22 @@ export class GeminiService {
 
   isLoading = signal<boolean>(false);
   hasApiKey = signal<boolean>(false);
+  activeModel = signal<string>(localStorage.getItem('nido_gemini_active_model') || '');
+
   private conversationHistory: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
-  constructor(private http: HttpClient) {
+  constructor() {
     const savedKey = localStorage.getItem('nido_gemini_key');
     if (savedKey) {
       this._apiKey = savedKey.trim().replace(/^["']|["']$/g, '').trim();
       this.hasApiKey.set(!!this._apiKey);
+      if (this._apiKey) {
+        this.discoverModels().then(models => {
+          if (models.length > 0 && !this.activeModel()) {
+            this.activeModel.set(models[0]);
+          }
+        });
+      }
     }
   }
 
@@ -63,15 +68,57 @@ export class GeminiService {
     this._apiKey = key.trim().replace(/^["']|["']$/g, '').trim();
     localStorage.setItem('nido_gemini_key', this._apiKey);
     this.hasApiKey.set(!!this._apiKey);
+    if (this._apiKey) {
+      this.discoverModels().then(models => {
+        if (models.length > 0) {
+          this.activeModel.set(models[0]);
+          localStorage.setItem('nido_gemini_active_model', models[0]);
+        }
+      });
+    }
   }
 
   getApiKey(): string {
     return this._apiKey;
   }
 
+  async discoverModels(): Promise<string[]> {
+    if (!this._apiKey) return [];
+    const endpoints = [
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(this._apiKey)}`,
+      `https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(this._apiKey)}`
+    ];
+
+    for (const ep of endpoints) {
+      try {
+        const resp = await fetch(ep);
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        if (data?.models && Array.isArray(data.models)) {
+          const supported = data.models
+            .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+            .map((m: any) => m.name.replace(/^models\//, ''));
+          if (supported.length > 0) {
+            return supported;
+          }
+        }
+      } catch (e) {
+        console.warn('ListModels fetch failed for', ep, e);
+      }
+    }
+    return [];
+  }
+
   sendMessage(userMessage: string): Observable<string> {
     if (!this._apiKey) {
       return throwError(() => new Error('API_KEY_MISSING'));
+    }
+    return from(this.executeWithFallback(userMessage));
+  }
+
+  private async executeWithFallback(userMessage: string): Promise<string> {
+    if (!this._apiKey) {
+      throw new Error('API_KEY_MISSING');
     }
 
     this.conversationHistory.push({
@@ -92,65 +139,117 @@ export class GeminiService {
       }
     };
 
-    const callEndpoint = (apiUrl: string) => {
-      const url = `${apiUrl}?key=${encodeURIComponent(this._apiKey)}`;
-      return this.http.post<GeminiResponse>(url, body, {
-        headers: new HttpHeaders({ 'Content-Type': 'application/json' })
-      });
-    };
+    // 1. Compile list of models to try
+    const modelsToTry: string[] = [];
 
-    return callEndpoint(this.PRIMARY_API_URL).pipe(
-      catchError((primaryErr: any) => {
-        // If 404 or model not found, try fallback to gemini-1.5-flash
-        if (primaryErr?.status === 404) {
-          console.warn('Gemini 2.0 Flash not available, trying Gemini 1.5 Flash fallback...');
-          return callEndpoint(this.FALLBACK_API_URL);
-        }
-        return throwError(() => primaryErr);
-      }),
-      map(response => {
-        const text = response.candidates?.[0]?.content?.parts?.[0]?.text || 'No pude generar una respuesta.';
-        this.conversationHistory.push({
-          role: 'model',
-          parts: [{ text }]
+    // Prioritize cached working model
+    const cachedModel = localStorage.getItem('nido_gemini_active_model');
+    if (cachedModel) {
+      modelsToTry.push(cachedModel);
+    }
+
+    // Try dynamically discovering models available for this specific API key
+    try {
+      const discovered = await this.discoverModels();
+      if (discovered.length > 0) {
+        const prioritized = [...discovered].sort((a, b) => {
+          const score = (m: string) => {
+            if (m.includes('2.5-flash')) return 100;
+            if (m.includes('2.0-flash')) return 90;
+            if (m.includes('1.5-flash')) return 80;
+            if (m.includes('flash')) return 70;
+            if (m.includes('pro')) return 60;
+            return 10;
+          };
+          return score(b) - score(a);
         });
-        return text;
-      }),
-      catchError((err: any) => {
-        // Remove last user message from history on error
-        this.conversationHistory.pop();
-        console.error('Gemini API error details:', err);
-
-        const googleError = err?.error?.error;
-        const googleMsg: string = googleError?.message || '';
-
-        let errorMsg = '';
-
-        if (err.status === 0) {
-          errorMsg = 'No se pudo conectar con los servidores de Google (código 0). Puede estar bloqueado por un adblocker en el navegador o un problema de red. Por favor revisa que generativelanguage.googleapis.com no esté bloqueado.';
-        } else if (err.status === 400) {
-          if (googleMsg.toLowerCase().includes('api key') || googleMsg.includes('INVALID_ARGUMENT')) {
-            errorMsg = `API key no válida: ${googleMsg || 'Verifica que la clave copiada de Google AI Studio sea correcta.'}`;
-          } else {
-            errorMsg = googleMsg ? `Solicitud incorrecta: ${googleMsg}` : 'Solicitud rechazada (400) por Google AI.';
+        for (const m of prioritized) {
+          if (!modelsToTry.includes(m)) {
+            modelsToTry.push(m);
           }
-        } else if (err.status === 403) {
-          errorMsg = googleMsg
-            ? `Permiso denegado por Google AI (403): ${googleMsg}`
-            : 'Permiso denegado (403). Verifica que tu API key esté habilitada para la Generative Language API en Google AI Studio.';
-        } else if (err.status === 404) {
-          errorMsg = `Modelo de IA no encontrado (404): ${googleMsg || 'Los modelos probados no están disponibles en tu proyecto.'}`;
-        } else if (err.status === 429) {
-          errorMsg = 'Límite de solicitudes superado (429). Espera un momento antes de volver a consultar.';
-        } else if (googleMsg) {
-          errorMsg = `Error de Google AI (${err.status || 'desconocido'}): ${googleMsg}`;
-        } else {
-          errorMsg = `Error al conectar con la IA (${err.status ? 'código HTTP ' + err.status : 'revisa tu conexión y clave de API'}).`;
         }
+      }
+    } catch (e) {
+      console.warn('Model discovery failed:', e);
+    }
 
-        return throwError(() => new Error(errorMsg));
-      })
-    );
+    // Fallback list of known Gemini models
+    const fallbackList = [
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-exp',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-flash-001',
+      'gemini-1.5-flash-8b',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-1.5-pro-latest',
+      'gemini-pro'
+    ];
+    for (const fb of fallbackList) {
+      if (!modelsToTry.includes(fb)) {
+        modelsToTry.push(fb);
+      }
+    }
+
+    const apiVersions = ['v1beta', 'v1'];
+    let lastError: any = null;
+
+    // Try candidates in order
+    for (const model of modelsToTry) {
+      for (const apiVersion of apiVersions) {
+        const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${encodeURIComponent(this._apiKey)}`;
+
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            const text = data.candidates[0].content.parts[0].text;
+            this.conversationHistory.push({
+              role: 'model',
+              parts: [{ text }]
+            });
+            this.activeModel.set(model);
+            localStorage.setItem('nido_gemini_active_model', model);
+            return text;
+          }
+
+          if (response.status === 404) {
+            // Model not available on this version, try next
+            lastError = data?.error || { message: `Modelo ${model} no disponible (404)` };
+            continue;
+          }
+
+          // Non-404 error (e.g., 400 Invalid key, 403 Forbidden, 429 Rate limit)
+          const googleMsg = data?.error?.message || response.statusText;
+          this.conversationHistory.pop();
+          if (response.status === 400) {
+            throw new Error(`API key no válida (400): ${googleMsg}`);
+          } else if (response.status === 403) {
+            throw new Error(`Permiso denegado por Google AI (403): ${googleMsg}`);
+          } else if (response.status === 429) {
+            throw new Error(`Límite de solicitudes superado (429): ${googleMsg}`);
+          } else {
+            throw new Error(`Error de Google AI (${response.status}): ${googleMsg}`);
+          }
+        } catch (err: any) {
+          if (err.message && !err.message.includes('Failed to fetch')) {
+            throw err;
+          }
+          lastError = err;
+        }
+      }
+    }
+
+    this.conversationHistory.pop();
+    const detail = lastError?.message || 'Ningún modelo disponible respondió';
+    throw new Error(`Ningún modelo de Gemini respondió con éxito para tu clave. Detalle: ${detail}`);
   }
 
   clearConversation() {
