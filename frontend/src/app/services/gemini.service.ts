@@ -31,6 +31,21 @@ Responde SIEMPRE en español, de forma amigable, concisa y práctica.
 Usa emojis moderadamente para hacer las respuestas más visuales.
 Si el usuario pregunta sobre algo no relacionado con el hogar, redirige amablemente.`;
 
+function isNonTextModel(name: string): boolean {
+  const lower = name.toLowerCase();
+  return (
+    lower.includes('tts') ||
+    lower.includes('audio') ||
+    lower.includes('embed') ||
+    lower.includes('imagen') ||
+    lower.includes('realtime') ||
+    lower.includes('whisper') ||
+    lower.includes('moderation') ||
+    lower.includes('aqa') ||
+    lower.includes('medlm')
+  );
+}
+
 @Injectable({ providedIn: 'root' })
 export class GeminiService {
   private _apiKey = '';
@@ -45,7 +60,7 @@ export class GeminiService {
 
   isLoading = signal<boolean>(false);
   hasApiKey = signal<boolean>(false);
-  activeModel = signal<string>(localStorage.getItem('nido_gemini_active_model') || '');
+  activeModel = signal<string>(this.getCleanCachedModel());
 
   private conversationHistory: Array<{ role: string; parts: Array<{ text: string }> }> = [];
 
@@ -64,10 +79,21 @@ export class GeminiService {
     }
   }
 
+  private getCleanCachedModel(): string {
+    const cached = localStorage.getItem('nido_gemini_active_model');
+    if (cached && !isNonTextModel(cached)) {
+      return cached;
+    }
+    localStorage.removeItem('nido_gemini_active_model');
+    return '';
+  }
+
   setApiKey(key: string) {
     this._apiKey = key.trim().replace(/^["']|["']$/g, '').trim();
     localStorage.setItem('nido_gemini_key', this._apiKey);
     this.hasApiKey.set(!!this._apiKey);
+    localStorage.removeItem('nido_gemini_active_model');
+    this.activeModel.set('');
     if (this._apiKey) {
       this.discoverModels().then(models => {
         if (models.length > 0) {
@@ -96,7 +122,10 @@ export class GeminiService {
         const data = await resp.json();
         if (data?.models && Array.isArray(data.models)) {
           const supported = data.models
-            .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+            .filter((m: any) =>
+              m.supportedGenerationMethods?.includes('generateContent') &&
+              !isNonTextModel(m.name)
+            )
             .map((m: any) => m.name.replace(/^models\//, ''));
           if (supported.length > 0) {
             return supported;
@@ -142,8 +171,8 @@ export class GeminiService {
     // 1. Compile list of models to try
     const modelsToTry: string[] = [];
 
-    // Prioritize cached working model
-    const cachedModel = localStorage.getItem('nido_gemini_active_model');
+    // Prioritize clean cached working model
+    const cachedModel = this.getCleanCachedModel();
     if (cachedModel) {
       modelsToTry.push(cachedModel);
     }
@@ -154,11 +183,15 @@ export class GeminiService {
       if (discovered.length > 0) {
         const prioritized = [...discovered].sort((a, b) => {
           const score = (m: string) => {
-            if (m.includes('2.5-flash')) return 100;
-            if (m.includes('2.0-flash')) return 90;
-            if (m.includes('1.5-flash')) return 80;
-            if (m.includes('flash')) return 70;
-            if (m.includes('pro')) return 60;
+            const lower = m.toLowerCase();
+            if (lower === 'gemini-2.0-flash' || lower === 'gemini-2.0-flash-001') return 100;
+            if (lower === 'gemini-2.5-flash') return 95;
+            if (lower.includes('gemini-2.0-flash')) return 90;
+            if (lower.includes('gemini-2.5-flash')) return 85;
+            if (lower === 'gemini-1.5-flash' || lower === 'gemini-1.5-flash-latest' || lower === 'gemini-1.5-flash-001') return 80;
+            if (lower.includes('gemini-1.5-flash')) return 75;
+            if (lower.includes('flash')) return 70;
+            if (lower.includes('pro')) return 60;
             return 10;
           };
           return score(b) - score(a);
@@ -173,10 +206,10 @@ export class GeminiService {
       console.warn('Model discovery failed:', e);
     }
 
-    // Fallback list of known Gemini models
+    // Fallback list of known text-compatible Gemini models
     const fallbackList = [
-      'gemini-2.5-flash',
       'gemini-2.0-flash',
+      'gemini-2.5-flash',
       'gemini-2.0-flash-exp',
       'gemini-1.5-flash-latest',
       'gemini-1.5-flash-001',
@@ -220,24 +253,45 @@ export class GeminiService {
             return text;
           }
 
+          const googleMsg = data?.error?.message || response.statusText || '';
+
+          // 404: model not found in this endpoint version
           if (response.status === 404) {
-            // Model not available on this version, try next
             lastError = data?.error || { message: `Modelo ${model} no disponible (404)` };
             continue;
           }
 
-          // Non-404 error (e.g., 400 Invalid key, 403 Forbidden, 429 Rate limit)
-          const googleMsg = data?.error?.message || response.statusText;
-          this.conversationHistory.pop();
-          if (response.status === 400) {
-            throw new Error(`API key no válida (400): ${googleMsg}`);
-          } else if (response.status === 403) {
-            throw new Error(`Permiso denegado por Google AI (403): ${googleMsg}`);
-          } else if (response.status === 429) {
-            throw new Error(`Límite de solicitudes superado (429): ${googleMsg}`);
-          } else {
-            throw new Error(`Error de Google AI (${response.status}): ${googleMsg}`);
+          // Check if 400 is an authentic invalid API key error vs a model capability error (e.g. modalities)
+          const isKeyError = response.status === 400 && (
+            googleMsg.toLowerCase().includes('api key not valid') ||
+            googleMsg.toLowerCase().includes('pass a valid api key') ||
+            data?.error?.details?.some((d: any) => d.reason === 'API_KEY_INVALID')
+          );
+
+          if (isKeyError) {
+            this.conversationHistory.pop();
+            throw new Error(`API key no válida: ${googleMsg}`);
           }
+
+          if (response.status === 403 && (
+            googleMsg.toLowerCase().includes('permission') ||
+            googleMsg.toLowerCase().includes('unregistered') ||
+            googleMsg.toLowerCase().includes('identity')
+          )) {
+            this.conversationHistory.pop();
+            throw new Error(`Permiso denegado por Google AI (403): ${googleMsg}`);
+          }
+
+          if (response.status === 429) {
+            this.conversationHistory.pop();
+            throw new Error(`Límite de solicitudes superado (429): ${googleMsg}`);
+          }
+
+          // If the model gave a 400 about modalities (e.g. AUDIO only) or capability, skip to next model!
+          console.warn(`Model ${model} (${apiVersion}) failed with ${response.status}: ${googleMsg}. Trying next model...`);
+          lastError = data?.error || { message: googleMsg };
+          continue;
+
         } catch (err: any) {
           if (err.message && !err.message.includes('Failed to fetch')) {
             throw err;
@@ -248,7 +302,7 @@ export class GeminiService {
     }
 
     this.conversationHistory.pop();
-    const detail = lastError?.message || 'Ningún modelo disponible respondió';
+    const detail = lastError?.message || 'Ningún modelo de texto disponible respondió';
     throw new Error(`Ningún modelo de Gemini respondió con éxito para tu clave. Detalle: ${detail}`);
   }
 
