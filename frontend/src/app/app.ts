@@ -5,11 +5,12 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from './services/auth.service';
 import { HouseholdService } from './services/household.service';
 import { Household } from './models/nido.models';
+import { AiAssistantComponent } from './components/ai-assistant/ai-assistant.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FormsModule, AiAssistantComponent],
   template: `
     <div class="app-layout" [class.unauthenticated]="!authService.currentUser()">
       <!-- Navigation Bar (Only for logged users) -->
@@ -154,6 +155,9 @@ import { Household } from './models/nido.models';
           </div>
         </div>
       </div>
+
+      <!-- AI Assistant Panel (available for authenticated users) -->
+      <app-ai-assistant *ngIf="authService.currentUser()"></app-ai-assistant>
     </div>
   `,
   styles: [`
