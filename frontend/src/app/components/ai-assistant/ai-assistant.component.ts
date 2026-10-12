@@ -78,13 +78,16 @@ import { GeminiService, ChatMessage } from '../../services/gemini.service';
           <input
             type="password"
             [(ngModel)]="apiKeyInput"
-            placeholder="Pega tu API key aquí..."
+            placeholder="Pega tu API key aquí (AIzaSy...)"
             class="api-key-input"
             id="ai-api-key-input"
           />
           <button class="btn-save" (click)="saveApiKey()" id="ai-save-key-btn">Guardar</button>
         </div>
-        <p class="settings-saved" *ngIf="keySaved()">✅ API key guardada correctamente</p>
+        <p class="settings-saved" *ngIf="keySaved()">✅ API key guardada y actualizada</p>
+        <p class="settings-current" *ngIf="geminiService.hasApiKey() && !keySaved()" style="margin: 0.35rem 0 0; font-size: 0.8rem; color: #059669;">
+          🔒 Clave activa: ••••••••{{ geminiService.getApiKey().slice(-4) }}
+        </p>
       </div>
 
       <!-- Quick actions chips -->

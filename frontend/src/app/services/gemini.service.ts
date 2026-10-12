@@ -35,7 +35,8 @@ Si el usuario pregunta sobre algo no relacionado con el hogar, redirige amableme
 
 @Injectable({ providedIn: 'root' })
 export class GeminiService {
-  private readonly API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  private readonly PRIMARY_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  private readonly FALLBACK_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   private _apiKey = '';
 
   messages = signal<ChatMessage[]>([
@@ -53,15 +54,19 @@ export class GeminiService {
   constructor(private http: HttpClient) {
     const savedKey = localStorage.getItem('nido_gemini_key');
     if (savedKey) {
-      this._apiKey = savedKey;
-      this.hasApiKey.set(true);
+      this._apiKey = savedKey.trim().replace(/^["']|["']$/g, '').trim();
+      this.hasApiKey.set(!!this._apiKey);
     }
   }
 
   setApiKey(key: string) {
-    this._apiKey = key.trim();
+    this._apiKey = key.trim().replace(/^["']|["']$/g, '').trim();
     localStorage.setItem('nido_gemini_key', this._apiKey);
     this.hasApiKey.set(!!this._apiKey);
+  }
+
+  getApiKey(): string {
+    return this._apiKey;
   }
 
   sendMessage(userMessage: string): Observable<string> {
@@ -87,11 +92,22 @@ export class GeminiService {
       }
     };
 
-    const url = `${this.API_URL}?key=${this._apiKey}`;
+    const callEndpoint = (apiUrl: string) => {
+      const url = `${apiUrl}?key=${encodeURIComponent(this._apiKey)}`;
+      return this.http.post<GeminiResponse>(url, body, {
+        headers: new HttpHeaders({ 'Content-Type': 'application/json' })
+      });
+    };
 
-    return this.http.post<GeminiResponse>(url, body, {
-      headers: new HttpHeaders({ 'Content-Type': 'application/json' })
-    }).pipe(
+    return callEndpoint(this.PRIMARY_API_URL).pipe(
+      catchError((primaryErr: any) => {
+        // If 404 or model not found, try fallback to gemini-1.5-flash
+        if (primaryErr?.status === 404) {
+          console.warn('Gemini 2.0 Flash not available, trying Gemini 1.5 Flash fallback...');
+          return callEndpoint(this.FALLBACK_API_URL);
+        }
+        return throwError(() => primaryErr);
+      }),
       map(response => {
         const text = response.candidates?.[0]?.content?.parts?.[0]?.text || 'No pude generar una respuesta.';
         this.conversationHistory.push({
@@ -100,15 +116,38 @@ export class GeminiService {
         });
         return text;
       }),
-      catchError(err => {
+      catchError((err: any) => {
         // Remove last user message from history on error
         this.conversationHistory.pop();
-        console.error('Gemini API error:', err);
-        const errorMsg = err.status === 400
-          ? 'API key no válida. Introduce una key válida de Google AI Studio.'
-          : err.status === 429
-            ? 'Límite de solicitudes superado. Espera un momento.'
-            : 'Error al conectar con la IA. Comprueba tu conexión.';
+        console.error('Gemini API error details:', err);
+
+        const googleError = err?.error?.error;
+        const googleMsg: string = googleError?.message || '';
+
+        let errorMsg = '';
+
+        if (err.status === 0) {
+          errorMsg = 'No se pudo conectar con los servidores de Google (código 0). Puede estar bloqueado por un adblocker en el navegador o un problema de red. Por favor revisa que generativelanguage.googleapis.com no esté bloqueado.';
+        } else if (err.status === 400) {
+          if (googleMsg.toLowerCase().includes('api key') || googleMsg.includes('INVALID_ARGUMENT')) {
+            errorMsg = `API key no válida: ${googleMsg || 'Verifica que la clave copiada de Google AI Studio sea correcta.'}`;
+          } else {
+            errorMsg = googleMsg ? `Solicitud incorrecta: ${googleMsg}` : 'Solicitud rechazada (400) por Google AI.';
+          }
+        } else if (err.status === 403) {
+          errorMsg = googleMsg
+            ? `Permiso denegado por Google AI (403): ${googleMsg}`
+            : 'Permiso denegado (403). Verifica que tu API key esté habilitada para la Generative Language API en Google AI Studio.';
+        } else if (err.status === 404) {
+          errorMsg = `Modelo de IA no encontrado (404): ${googleMsg || 'Los modelos probados no están disponibles en tu proyecto.'}`;
+        } else if (err.status === 429) {
+          errorMsg = 'Límite de solicitudes superado (429). Espera un momento antes de volver a consultar.';
+        } else if (googleMsg) {
+          errorMsg = `Error de Google AI (${err.status || 'desconocido'}): ${googleMsg}`;
+        } else {
+          errorMsg = `Error al conectar con la IA (${err.status ? 'código HTTP ' + err.status : 'revisa tu conexión y clave de API'}).`;
+        }
+
         return throwError(() => new Error(errorMsg));
       })
     );
