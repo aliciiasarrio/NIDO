@@ -137,7 +137,7 @@ npm start
 ## 👩‍💻 Autora
 
 Desarrollado por **[Alicia Sarrío](https://github.com/aliciiasarrio)** — *Ingeniera Informática (UPV) & Full-Stack Developer*.  
-📧 Contacto: [sarriocolomaralicia@gmail.com](mailto:sarriocolomaralicia@gmail.com)
+💼 **LinkedIn:** [alicia-sarrío](https://www.linkedin.com/in/alicia-sarri%C3%B3-4b6b6633a/) | 📧 **Contacto:** [sarriocolomaralicia@gmail.com](mailto:sarriocolomaralicia@gmail.com)
 
 ---
 
