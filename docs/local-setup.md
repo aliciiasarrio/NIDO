@@ -52,7 +52,7 @@ $lines = Get-Content ..\.env; foreach ($line in $lines) { $p = $line.Split('=', 
 ```
 
 El backend se iniciará en `http://localhost:8080`.
-Flyway aplicará automáticamente las migraciones (`V1` a `V6`) en la base de datos conservando todos los datos existentes.
+Flyway aplicará automáticamente las migraciones (`V1` a `V7`) en la base de datos conservando todos los datos existentes.
 
 ---
 

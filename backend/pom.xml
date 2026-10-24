@@ -11,20 +11,25 @@
 	<groupId>com.nido</groupId>
 	<artifactId>nido-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
-	<url/>
+	<name>NIDO Backend</name>
+	<description>API REST para organización e inventario inteligente del hogar</description>
+	<url>https://github.com/aliciiasarrio/NIDO</url>
 	<licenses>
-		<license/>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
+		</license>
 	</licenses>
 	<developers>
-		<developer/>
+		<developer>
+			<name>Alicia Sarrío</name>
+			<url>https://github.com/aliciiasarrio</url>
+		</developer>
 	</developers>
 	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
+		<connection>scm:git:git://github.com/aliciiasarrio/NIDO.git</connection>
+		<developerConnection>scm:git:ssh://github.com:aliciiasarrio/NIDO.git</developerConnection>
+		<url>https://github.com/aliciiasarrio/NIDO</url>
 	</scm>
 	<properties>
 		<java.version>21</java.version>

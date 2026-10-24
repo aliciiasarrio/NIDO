@@ -1,3 +1,66 @@
+# ==============================================================================
+# NIDO - Root .gitignore
+# ==============================================================================
+
+# Environment variables & secrets
 .env
 .env.*
 !.env.example
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs & Text Editors
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.springBeans
+.sts4-cache
+
+# Build outputs & dependencies
+target/
+build/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+node_modules/
+.angular/cache/
+.sass-cache/
+
+# Logs & Runtime
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+__screenshots__/
+
+# Backup & temporary files
+*.bak
+*.swp
+*.swo
+*~
